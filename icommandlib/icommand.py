@@ -29,10 +29,10 @@ class IProcess(object):
                     if fd is self._master:
                         out = os.read(self._master, 1024)
                         if text in out.decode('utf8'):
-                            print(out.decode('utf8'))
                             return
 
     def send_keys(self, text):
+        self._stream.feed(text)
         self._process.stdin.write(text.encode('utf8'))
 
     def wait_for_finish(self):
