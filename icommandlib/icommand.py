@@ -18,7 +18,7 @@ class IProcess(object):
     def pid(self):
         return self._process.pid
 
-    def wait_for(self, text):
+    def wait_until_on_screen(self, text):
         while True:
             try:
                 rlist, _wlist, _xlist = select.select([self._master], [], [], 1)
@@ -29,12 +29,13 @@ class IProcess(object):
                     if fd is self._master:
                         out = os.read(self._master, 1024)
                         if text in out.decode('utf8'):
+                            print(out.decode('utf8'))
                             return
 
     def send_keys(self, text):
-        self._stream.feed(text)
+        self._process.stdin.write(text.encode('utf8'))
 
-    def wait_for_close(self):
+    def wait_for_finish(self):
         psutil.Process(self.pid).wait()
 
 
@@ -53,6 +54,7 @@ class ICommand(object):
             bufsize=0,  # Ensures that all stdout/err is pushed to us immediately.
             stdout=slave,
             stderr=slave,
+            stdin=subprocess.PIPE,
             env=self._command.env,
         )
 

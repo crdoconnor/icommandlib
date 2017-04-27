@@ -1,24 +1,31 @@
 Prompt:
   based on: icommandlib
+  description: |
+    Plenty of simple CLI applications simply prompt the
+    user for text and then do something simple. Interacting
+    with these applications with icommandlib requires
+    basic, single threaded commands.
   preconditions:
     files:
-      interactivecmd.py: |
+      favoritecolor.py: |
         import sys
 
-        answer = raw_input("command prompt:")
-        sys.stdout(answer)
+        answer = input("favorite color:")
+
+        with open("colors.txt", "w") as handle:
+            handle.write(answer)
+
         sys.exit(0)
-      example.py: |
+  scenario:
+    - Run: |
         from icommandlib import ICommand
         from commandlib import python
 
-        def run():
-            process = ICommand(python("interactivecmd.py")).run()
-            process.wait_for("command prompt:")
-            process.send_keys("password\n")
-            process.wait_for_close()
-  scenario:
-    - Run: |
-        from example import run
-
-        run()
+        process = ICommand(python("favoritecolor.py")).run()
+        process.wait_until_on_screen("favorite color:")
+        process.send_keys("red")
+        process.send_keys("\n")
+        process.wait_for_finish()
+    - File contents will be:
+        filename: colors.txt
+        text: red
