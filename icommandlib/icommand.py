@@ -8,10 +8,9 @@ import psutil
 
 
 class IProcess(object):
-    def __init__(self, process, master, slave, stream, screen):
+    def __init__(self, process, master, stream, screen):
         self._process = process
         self._master = master
-        self._slave = slave
         self._stream = stream
         self._screen = screen
 
@@ -66,4 +65,4 @@ class ICommand(object):
             env=self._command.env,
         )
 
-        return IProcess(proc, master, slave, stream, screen)
+        return IProcess(proc, master, stream, screen)
