@@ -8,11 +8,12 @@ import psutil
 
 
 class IProcess(object):
-    def __init__(self, process, master, slave, stream):
+    def __init__(self, process, master, slave, stream, screen):
         self._process = process
         self._master = master
         self._slave = slave
         self._stream = stream
+        self._screen = screen
 
     @property
     def pid(self):
@@ -32,8 +33,12 @@ class IProcess(object):
                 for fd in rlist:
                     if fd is self._master:
                         out = os.read(self._master, 1024)
-                        if text in out.decode('utf8'):
-                            return
+                        if not out:
+                            break
+                        self._stream.feed(out.decode('utf8'))
+                for line in self._screen.display:
+                    if text in line:
+                        return
 
     def send_keys(self, text):
         os.write(self._master, text.encode('utf8'))
@@ -61,4 +66,4 @@ class ICommand(object):
             env=self._command.env,
         )
 
-        return IProcess(proc, master, slave, stream)
+        return IProcess(proc, master, slave, stream, screen)
