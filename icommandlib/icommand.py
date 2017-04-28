@@ -54,6 +54,9 @@ class IProcess(object):
     def wait_for_finish(self):
         self.psutil.wait()
 
+    def screenshot(self):
+        return "\n".join(line for line in self._screen.display)
+
 
 class ICommand(object):
     def __init__(self, command):
@@ -73,5 +76,4 @@ class ICommand(object):
             stdin=slave,
             env=self._command.env,
         )
-
         return IProcess(proc, master, stream, screen)
