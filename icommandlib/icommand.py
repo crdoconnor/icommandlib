@@ -18,6 +18,10 @@ class IProcess(object):
     def pid(self):
         return self._process.pid
 
+    @property
+    def psutil(self):
+        return psutil.Process(self.pid)
+
     def wait_until_on_screen(self, text):
         while True:
             try:
@@ -32,11 +36,10 @@ class IProcess(object):
                             return
 
     def send_keys(self, text):
-        self._stream.feed(text)
-        self._process.stdin.write(text.encode('utf8'))
+        os.write(self._master, text.encode('utf8'))
 
     def wait_for_finish(self):
-        psutil.Process(self.pid).wait()
+        self.psutil.wait()
 
 
 class ICommand(object):
@@ -54,7 +57,7 @@ class ICommand(object):
             bufsize=0,  # Ensures that all stdout/err is pushed to us immediately.
             stdout=slave,
             stderr=slave,
-            stdin=subprocess.PIPE,
+            stdin=slave,
             env=self._command.env,
         )
 
