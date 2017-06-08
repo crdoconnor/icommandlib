@@ -217,7 +217,6 @@ def ci():
     """
     Run all stories.
     """
-    lint()
     print(
         StoryCollection(
             pathq(KEYPATH).ext("story"), Engine(KEYPATH, {})
