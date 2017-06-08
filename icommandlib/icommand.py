@@ -157,8 +157,9 @@ class IProcessHandle(object):
         self.tty = pyuv.TTY(self.loop, self._master, True)
         self.tty.start_read(self._on_tty_read)
 
-        self.timer_handler = pyuv.Timer(self.loop)
-        self.timer_handler.start(self._poll_handler, 0.01, 0.01)
+        if self._timeout is not None:
+            self.timer_handler = pyuv.Timer(self.loop)
+            self.timer_handler.start(self._timeout_handler, self._timeout, 0)
 
         self.loop.run()
 
@@ -182,11 +183,9 @@ class IProcessHandle(object):
     def _on_thread_callback(self, async_handle):
         self._check()
 
-    def _poll_handler(self, timer_handle):
-        if self._timeout is not None:
-            if time.time() > self._start_time + self._timeout:
-                self._close_handles()
-                self._response_queue.put(TimeoutMessage(self._timeout))
+    def _timeout_handler(self, timer_handle):
+        self._close_handles()
+        self._response_queue.put(TimeoutMessage(self._timeout))
 
     def _on_tty_read(self, handle, data, error):
         if data is None:
