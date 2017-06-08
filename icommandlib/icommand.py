@@ -33,6 +33,16 @@ class AsyncSendMethodMessage(Message):
     pass
 
 
+class RunningProcess(object):
+    def __init__(self, pid, stdin):
+        self._pid = pid
+        self._stdin = stdin
+
+
+class ProcessStartedMessage(Message):
+    pass
+
+
 class Condition(Message):
     pass
 
@@ -65,8 +75,11 @@ class IProcess(object):
             args=(icommand, self._request_queue, self._response_queue)
         )
         self._handle.start()
-        self._pid = self._expect_message(PIDMessage)
-        self._master = self._expect_message(FDMessage)
+
+        self._running_process = self._expect_message(ProcessStartedMessage)
+
+        self._pid = self._running_process._pid
+        self._master = self._running_process._stdin
         self._async_send = self._expect_message(AsyncSendMethodMessage)
 
     def _expect_message(self, of_kind):
@@ -146,8 +159,10 @@ class IProcessHandle(object):
             stdin=self._slave,
             env=icommand._command.env,
         )
-        self._response_queue.put(PIDMessage(self.pid))
-        self._response_queue.put(FDMessage(self._master))
+
+        self._response_queue.put(
+            ProcessStartedMessage(RunningProcess(self.pid, self._master))
+        )
 
         self.loop = pyuv.Loop.default_loop()
 
