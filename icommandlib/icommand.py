@@ -137,6 +137,9 @@ class IScreen(object):
 
 
 class IProcessHandle(object):
+    """
+    Starts and then manages and interacts with the process directly.
+    """
     def __init__(self, icommand, request_queue, response_queue):
         self._request_queue = request_queue
         self._response_queue = response_queue
@@ -249,6 +252,11 @@ class IProcessHandle(object):
 
 
 class ICommand(object):
+    """
+    Represents an interactive command, built using the fluent interface.
+    
+    Using .run() will both start the command and return an IProcess.
+    """
     def __init__(self, command):
         assert isinstance(command, commandlib.Command), "must be type 'commandlib.Command'"
         self._command = command
