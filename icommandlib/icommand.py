@@ -175,7 +175,7 @@ class IProcessHandle(object):
         self.tty = pyuv.TTY(self.loop, self._master, True)
         self.tty.start_read(self._on_tty_read)
 
-        self.timer_handler = None
+        self.timeout_handle = None
         self._reset_timeout()
 
         self.loop.run()
@@ -235,17 +235,17 @@ class IProcessHandle(object):
 
     def _reset_timeout(self):
         if self._timeout is not None:
-            if self.timer_handler is not None:
-                self.timer_handler.close()
-                self.timer_handler = None
-            self.timer_handler = pyuv.Timer(self.loop)
-            self.timer_handler.start(self._timeout_handler, self._timeout, 0)
+            if self.timeout_handle is not None:
+                self.timeout_handle.close()
+                self.timeout_handle = None
+            self.timeout_handle = pyuv.Timer(self.loop)
+            self.timeout_handle.start(self._timeout_handler, self._timeout, 0)
 
     def _close_handles(self):
         self._closing = True
-        if self.timer_handler is not None and not self.timer_handler.closed:
-            self.timer_handler.close()
-            self.timer_handler = None
+        if self.timeout_handle is not None and not self.timeout_handle.closed:
+            self.timeout_handle.close()
+            self.timeout_handle = None
         if not self.tty.closed:
             self.tty.close()
             self.tty = None
