@@ -29,6 +29,10 @@ class FDMessage(Message):
     pass
 
 
+class AsyncSendMethodMessage(Message):
+    pass
+
+
 class Condition(Message):
     pass
 
@@ -63,6 +67,7 @@ class IProcess(object):
         self._handle.start()
         self._pid = self._expect_message(PIDMessage)
         self._master = self._expect_message(FDMessage)
+        self._async_send = self._expect_message(AsyncSendMethodMessage)
 
     def _expect_message(self, of_kind):
         response = self._response_queue.get()
@@ -82,12 +87,14 @@ class IProcess(object):
         self._request_queue.put(Condition(
             lambda iscreen: text in iscreen.raw_bytes.decode('utf8')
         ))
+        self._async_send()
         self._expect_message(OutputMatched)
 
     def wait_until_on_screen(self, text):
         self._request_queue.put(Condition(
             lambda iscreen: len([line for line in iscreen.display if text in line]) > 0
         ))
+        self._async_send()
         self._expect_message(OutputMatched)
 
     def send_keys(self, text):
@@ -95,6 +102,7 @@ class IProcess(object):
 
     def screenshot(self):
         self._request_queue.put(TakeScreenshot())
+        self._async_send()
         return self._expect_message(Screenshot)
 
     def wait_for_finish(self):
@@ -143,6 +151,9 @@ class IProcessHandle(object):
 
         self.loop = pyuv.Loop.default_loop()
 
+        self.async = pyuv.Async(self.loop, self._on_thread_callback)
+        self._response_queue.put(AsyncSendMethodMessage(self.async.send))
+
         self.tty = pyuv.TTY(self.loop, self._master, True)
         self.tty.start_read(self._on_tty_read)
 
@@ -168,8 +179,10 @@ class IProcessHandle(object):
     def psutil(self):
         return psutil.Process(self.pid)
 
-    def _poll_handler(self, timer_handle):
+    def _on_thread_callback(self, async_handle):
         self._check()
+
+    def _poll_handler(self, timer_handle):
         if self._timeout is not None:
             if time.time() > self._start_time + self._timeout:
                 self._close_handles()
