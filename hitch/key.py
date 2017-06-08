@@ -2,7 +2,7 @@ from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, val
 from hitchrun import Path, hitch_maintenance, expected
 from commandlib import Command
 from pathquery import pathq
-from strictyaml import MapPattern, Str, Int
+from strictyaml import MapPattern, Map, Str, Int
 from commandlib import python
 import hitchpython
 import hitchserve
@@ -24,14 +24,14 @@ class Paths(object):
 
 class Engine(BaseEngine):
     schema = StorySchema(
-        preconditions={
+        preconditions=Map({
             "files": MapPattern(Str(), Str()),
             "variables": MapPattern(Str(), Str()),
             "python version": Str(),
-        },
-        params={
+        }),
+        params=Map({
             "python version": Str(),
-        },
+        }),
     )
 
     def __init__(self, keypath, settings):
