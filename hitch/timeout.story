@@ -10,12 +10,20 @@ Timeout:
     files:
       favoritecolor.py: |
         import sys
-        import timeout
+        import time
+        prompt = raw_input if sys.version_info.major == 2 else input
 
-        time.sleep(1)
+        time.sleep(0.3)
 
-        answer = input("favorite color:")
+        answer = prompt("favorite color:")
+        print(answer)
 
+        time.sleep(0.3)
+        answer = prompt("favorite film:")
+        print(answer)
+
+        time.sleep(1.0)
+        answer = prompt("favorite country:")
         print(answer)
   scenario:
     - Run: |
@@ -24,6 +32,15 @@ Timeout:
 
         process = ICommand(python("favoritecolor.py")).with_timeout(0.5).run()
 
+    - Run: |
+        process.wait_until_output_contains("favorite color:")
+        process.send_keys("blue\n")
+
+    - Run: |
+        process.wait_until_output_contains("favorite film:")
+        process.send_keys("usual suspects\n")
+
+
     - Exception is raised:
-        command: process.wait_until_output_contains("favorite color:")
+        command: process.wait_until_output_contains("favorite country:")
         exception: Timed out after 0.5 seconds.
