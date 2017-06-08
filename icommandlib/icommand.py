@@ -8,9 +8,9 @@ import pyuv
 import time
 from copy import copy
 from icommandlib import exceptions
-from functools import partial
 import threading
 import queue
+
 
 class Message(object):
     def __init__(self, value):
@@ -24,17 +24,30 @@ class Message(object):
 class PIDMessage(Message):
     pass
 
+
 class FDMessage(Message):
     pass
 
+
 class Condition(Message):
     pass
+
 
 class OutputMatched(Message):
     def __init__(self):
         self._value = None
 
+
 class TimeoutMessage(Message):
+    pass
+
+
+class TakeScreenshot(Message):
+    def __init__(self):
+        self._value = None
+
+
+class Screenshot(Message):
     pass
 
 
@@ -53,8 +66,16 @@ class IProcess(object):
 
     def _expect_message(self, of_kind):
         response = self._response_queue.get()
+        if isinstance(response, TimeoutMessage):
+            raise exceptions.IProcessTimeout(
+                "Timed out after {0} seconds.".format(response.value)
+            )
         if not isinstance(response, of_kind):
-            raise Exception("Threading error expected {0} got {1}".format(type(of_kind), type(of_kind)))
+            raise Exception(
+                "Threading error expected {0} got {1}".format(
+                    type(of_kind), type(of_kind)
+                )
+            )
         return response.value
 
     def wait_until_output_contains(self, text):
@@ -71,6 +92,10 @@ class IProcess(object):
 
     def send_keys(self, text):
         os.write(self._master, text.encode('utf8'))
+
+    def screenshot(self):
+        self._request_queue.put(TakeScreenshot())
+        return self._expect_message(Screenshot)
 
     def wait_for_finish(self):
         psutil.Process(self._pid).wait()
@@ -104,6 +129,7 @@ class IProcessHandle(object):
         self._closing = False
         self._timeout = icommand._timeout
         self._task = None
+        self._start_time = time.time()
         self._process = subprocess.Popen(
             icommand._command.arguments,
             bufsize=0,  # Ensures that all stdout/err is pushed to us immediately.
@@ -116,16 +142,13 @@ class IProcessHandle(object):
         self._response_queue.put(FDMessage(self._master))
 
         self.loop = pyuv.Loop.default_loop()
-        
+
         self.tty = pyuv.TTY(self.loop, self._master, True)
         self.tty.start_read(self._on_tty_read)
-        
-        if self._timeout is not None:
-            self.timer_handler = pyuv.Timer(self.loop)
-            self.timer_handler.start(self._poll_handler, 0.01, 0.01)
-        else:
-            self.timer_handler = None
-        
+
+        self.timer_handler = pyuv.Timer(self.loop)
+        self.timer_handler.start(self._poll_handler, 0.01, 0.01)
+
         self.loop.run()
 
     @property
@@ -147,9 +170,10 @@ class IProcessHandle(object):
 
     def _poll_handler(self, timer_handle):
         self._check()
-        if time.time() > self._start_time + self._timeout:
-            self._response_queue.put(TimeoutMessage())
-            self._close_handles()
+        if self._timeout is not None:
+            if time.time() > self._start_time + self._timeout:
+                self._close_handles()
+                self._response_queue.put(TimeoutMessage(self._timeout))
 
     def _on_tty_read(self, handle, data, error):
         if data is None:
@@ -161,13 +185,22 @@ class IProcessHandle(object):
 
     def _check(self):
         if self._task is None:
-            self._task = self._expect_message(Condition)
+            try:
+                self._task = self._request_queue.get(block=False)
+            except queue.Empty:
+                self._task = None
 
         if self._task is not None:
-            iscreen = IScreen(self._screen, self._raw_byte_output)
+            if isinstance(self._task, Condition):
+                iscreen = IScreen(self._screen, self._raw_byte_output)
 
-            if self._task(iscreen):
-                self._response_queue.put(OutputMatched())
+                if self._task.value(iscreen):
+                    self._response_queue.put(OutputMatched())
+                    self._task = None
+            if isinstance(self._task, TakeScreenshot):
+                self._response_queue.put(Screenshot(
+                    "\n".join(line for line in self._screen.display)
+                ))
                 self._task = None
 
     def _close_handles(self):
@@ -178,22 +211,6 @@ class IProcessHandle(object):
         if not self.tty.closed:
             self.tty.close()
             self.tty = None
-
-    def _expect_message(self, of_kind, block=True):
-        try:
-            request = self._request_queue.get(block=block)
-            if not isinstance(request, of_kind):
-                raise Exception(
-                    "Threading error expected {0} got {1}".format(
-                        type(of_kind), type(of_kind)
-                    )
-                )
-            return request.value
-        except queue.Empty:
-            return None
-
-    def screenshot(self):
-        return "\n".join(line for line in self._screen.display)
 
 
 class ICommand(object):
