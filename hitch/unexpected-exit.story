@@ -9,6 +9,7 @@ Unexpected exit:
         import sys
 
         print("an error occurred in this program")
+
         sys.exit(1)
   scenario:
     - Run: |
