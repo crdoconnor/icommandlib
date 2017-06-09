@@ -4,3 +4,7 @@ class ICommandError(Exception):
 
 class IProcessTimeout(ICommandError):
     pass
+
+
+class UnexpectedExit(ICommandError):
+    pass

@@ -95,7 +95,11 @@ class IProcessHandle(object):
     def on_exit(self, proc, exit_status, term_signal):
         self.check()
         self.response_queue.put(
-            message.ExitMessage(message.FinishedProcess(exit_status, term_signal))
+            message.ExitMessage(message.FinishedProcess(
+                exit_status,
+                term_signal,
+                '\n'.join(self.screen.display),
+            ))
         )
 
     def on_tty_read(self, handle, data, error):

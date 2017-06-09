@@ -30,13 +30,14 @@ class IProcess(object):
             raise exceptions.IProcessTimeout(
                 "Timed out after {0} seconds.".format(response.value)
             )
-        #if of_kind != message.ExitMessage:
-            #if isinstance(response, message.ExitMessage):
-                #raise exceptions.IProcessUnexpectedExit(
-                    #"Process unexpectedly exited with exit_code {0}".format(
-                        #response.value.exit_status,
-                    #)
-                #)
+        if of_kind != message.ExitMessage:
+            if isinstance(response, message.ExitMessage):
+                raise exceptions.UnexpectedExit(
+                    "\n\n{0}\n\nProcess unexpectedly exited with exit_code {1}".format(
+                        response.value.screenshot.strip(),
+                        response.value.exit_status,
+                    )
+                )
         if not isinstance(response, of_kind):
             raise Exception(
                 "Threading error expected {0} got {1}".format(
