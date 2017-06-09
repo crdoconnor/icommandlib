@@ -27,6 +27,16 @@ class RunningProcess(object):
         self._stdin = stdin
 
 
+class FinishedProcess(object):
+    def __init__(self, exit_status, term_signal):
+        self.exit_status = exit_status
+        self.term_signal = term_signal
+
+
+class ExitMessage(Message):
+    pass
+
+
 class ProcessStartedMessage(Message):
     pass
 

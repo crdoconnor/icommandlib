@@ -93,7 +93,10 @@ class IProcessHandle(object):
         self.response_queue.put(message.TimeoutMessage(self.timeout))
 
     def on_exit(self, proc, exit_status, term_signal):
-        return
+        self.check()
+        self.response_queue.put(
+            message.ExitMessage(message.FinishedProcess(exit_status, term_signal))
+        )
 
     def on_tty_read(self, handle, data, error):
         if data is None:

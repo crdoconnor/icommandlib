@@ -30,6 +30,13 @@ class IProcess(object):
             raise exceptions.IProcessTimeout(
                 "Timed out after {0} seconds.".format(response.value)
             )
+        #if of_kind != message.ExitMessage:
+            #if isinstance(response, message.ExitMessage):
+                #raise exceptions.IProcessUnexpectedExit(
+                    #"Process unexpectedly exited with exit_code {0}".format(
+                        #response.value.exit_status,
+                    #)
+                #)
         if not isinstance(response, of_kind):
             raise Exception(
                 "Threading error expected {0} got {1}".format(
@@ -61,4 +68,4 @@ class IProcess(object):
         return self._expect_message(message.Screenshot)
 
     def wait_for_finish(self):
-        psutil.Process(self._pid).wait()
+        self._expect_message(message.ExitMessage)
