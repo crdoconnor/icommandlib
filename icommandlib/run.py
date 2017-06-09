@@ -63,33 +63,33 @@ class IProcessHandle(object):
 
         self.loop = pyuv.Loop.default_loop()
 
-        self.async = pyuv.Async(self.loop, self._on_thread_callback)
+        self.async = pyuv.Async(self.loop, self.on_thread_callback)
         self.response_queue.put(message.AsyncSendMethodMessage(self.async.send))
 
         self.tty = pyuv.TTY(self.loop, self.master_fd, True)
-        self.tty.start_read(self._on_tty_read)
+        self.tty.start_read(self.on_tty_read)
 
         self.timeout_handle = None
-        self._reset_timeout()
+        self.reset_timeout()
 
         self.loop.run()
 
-    def _on_thread_callback(self, async_handle):
-        self._check()
+    def on_thread_callback(self, async_handle):
+        self.check()
 
-    def _timeout_handler(self, timer_handle):
-        self._close_handles()
+    def timeout_handler(self, timer_handle):
+        self.close_handles()
         self.response_queue.put(message.TimeoutMessage(self.timeout))
 
-    def _on_tty_read(self, handle, data, error):
+    def on_tty_read(self, handle, data, error):
         if data is None:
             pass
         else:
             self.stream.feed(data.decode('utf8'))
             self.raw_byte_output = self.raw_byte_output + data
-            self._check()
+            self.check()
 
-    def _check(self):
+    def check(self):
         if self.task is None:
             try:
                 self.task = self.request_queue.get(block=False)
@@ -101,7 +101,7 @@ class IProcessHandle(object):
                 iscreen = IScreen(self.screen, self.raw_byte_output)
 
                 if self.task.value(iscreen):
-                    self._reset_timeout()
+                    self.reset_timeout()
                     self.response_queue.put(message.OutputMatched())
                     self.task = None
             if isinstance(self.task, message.TakeScreenshot):
@@ -110,15 +110,15 @@ class IProcessHandle(object):
                 ))
                 self.task = None
 
-    def _reset_timeout(self):
+    def reset_timeout(self):
         if self.timeout is not None:
             if self.timeout_handle is not None:
                 self.timeout_handle.close()
                 self.timeout_handle = None
             self.timeout_handle = pyuv.Timer(self.loop)
-            self.timeout_handle.start(self._timeout_handler, self.timeout, 0)
+            self.timeout_handle.start(self.timeout_handler, self.timeout, 0)
 
-    def _close_handles(self):
+    def close_handles(self):
         if self.timeout_handle is not None and not self.timeout_handle.closed:
             self.timeout_handle.close()
             self.timeout_handle = None
