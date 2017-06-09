@@ -1,10 +1,8 @@
 import queue
 import pyte
-import subprocess
 import pyuv
 from icommandlib import messages as message
 import pty
-import time
 
 
 class IScreen(object):
@@ -46,13 +44,31 @@ class IProcessHandle(object):
         self.timeout = icommand.timeout
         self.task = None
 
-        self.process = subprocess.Popen(
-            icommand._command.arguments,
-            bufsize=0,  # Ensures that all stdout/err is pushed to us immediately.
-            stdout=self.slave_fd,
-            stderr=self.slave_fd,
-            stdin=self.slave_fd,
+        self.loop = pyuv.Loop.default_loop()
+
+        self.tty = pyuv.TTY(self.loop, self.master_fd, True)
+        self.tty.start_read(self.on_tty_read)
+
+        self.process = pyuv.Process.spawn(
+            self.loop,
+            args=icommand._command.arguments,
             env=icommand._command.env,
+            cwd=icommand._command.directory,
+            exit_callback=self.on_exit,
+            stdio=[
+                pyuv.StdIO(
+                    fd=self.slave_fd,
+                    flags=pyuv.UV_INHERIT_FD,
+                ),
+                pyuv.StdIO(
+                    fd=self.slave_fd,
+                    flags=pyuv.UV_INHERIT_FD,
+                ),
+                pyuv.StdIO(
+                    fd=self.slave_fd,
+                    flags=pyuv.UV_INHERIT_FD,
+                ),
+            ]
         )
 
         self.response_queue.put(
@@ -61,13 +77,8 @@ class IProcessHandle(object):
             ))
         )
 
-        self.loop = pyuv.Loop.default_loop()
-
         self.async = pyuv.Async(self.loop, self.on_thread_callback)
         self.response_queue.put(message.AsyncSendMethodMessage(self.async.send))
-
-        self.tty = pyuv.TTY(self.loop, self.master_fd, True)
-        self.tty.start_read(self.on_tty_read)
 
         self.timeout_handle = None
         self.reset_timeout()
@@ -80,6 +91,9 @@ class IProcessHandle(object):
     def timeout_handler(self, timer_handle):
         self.close_handles()
         self.response_queue.put(message.TimeoutMessage(self.timeout))
+
+    def on_exit(self, proc, exit_status, term_signal):
+        return
 
     def on_tty_read(self, handle, data, error):
         if data is None:

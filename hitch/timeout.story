@@ -11,6 +11,7 @@ Timeout:
       favoritecolor.py: |
         import sys
         import time
+
         prompt = raw_input if sys.version_info.major == 2 else input
 
         time.sleep(0.3)
@@ -34,6 +35,8 @@ Timeout:
 
     - Run: |
         process.wait_until_output_contains("favorite color:")
+
+    - Run: |
         process.send_keys("blue\n")
 
     - Run: |
