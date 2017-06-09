@@ -79,7 +79,7 @@ class IProcess(object):
         self._running_process = self._expect_message(ProcessStartedMessage)
 
         self._pid = self._running_process._pid
-        self._master = self._running_process._stdin
+        self._master_fd = self._running_process._stdin
         self._async_send = self._expect_message(AsyncSendMethodMessage)
 
     def _expect_message(self, of_kind):
@@ -111,7 +111,7 @@ class IProcess(object):
         self._expect_message(OutputMatched)
 
     def send_keys(self, text):
-        os.write(self._master, text.encode('utf8'))
+        os.write(self._master_fd, text.encode('utf8'))
 
     def screenshot(self):
         self._request_queue.put(TakeScreenshot())
@@ -153,27 +153,26 @@ class IProcessHandle(object):
         self.request_queue = request_queue       # Messages from master thread
         self.response_queue = response_queue     # Messages to master thread
         self._icommand = icommand
-        self._master, self._slave = pty.openpty()
-        self._stream = pyte.Stream()
-        self._screen = pyte.Screen(80, 24)
-        self._stream.attach(self._screen)
-        self._timeout_triggered = False
-        self._raw_byte_output = b''
-        self._timeout = icommand._timeout
+        self.master_fd, self.slave_fd = pty.openpty()
+        self.stream = pyte.Stream()
+        self.screen = pyte.Screen(80, 24)
+        self.stream.attach(self.screen)
+        self.raw_byte_output = b''
+        self.timeout = icommand.timeout
         self._task = None
         self._start_time = time.time()
         self._process = subprocess.Popen(
             icommand._command.arguments,
             bufsize=0,  # Ensures that all stdout/err is pushed to us immediately.
-            stdout=self._slave,
-            stderr=self._slave,
-            stdin=self._slave,
+            stdout=self.slave_fd,
+            stderr=self.slave_fd,
+            stdin=self.slave_fd,
             env=icommand._command.env,
         )
 
         self.response_queue.put(
             ProcessStartedMessage(RunningProcess(
-                self._process.pid, self._master
+                self._process.pid, self.master_fd
             ))
         )
 
@@ -182,7 +181,7 @@ class IProcessHandle(object):
         self.async = pyuv.Async(self.loop, self._on_thread_callback)
         self.response_queue.put(AsyncSendMethodMessage(self.async.send))
 
-        self.tty = pyuv.TTY(self.loop, self._master, True)
+        self.tty = pyuv.TTY(self.loop, self.master_fd, True)
         self.tty.start_read(self._on_tty_read)
 
         self.timeout_handle = None
@@ -196,14 +195,14 @@ class IProcessHandle(object):
 
     def _timeout_handler(self, timer_handle):
         self._close_handles()
-        self.response_queue.put(TimeoutMessage(self._timeout))
+        self.response_queue.put(TimeoutMessage(self.timeout))
 
     def _on_tty_read(self, handle, data, error):
         if data is None:
             pass
         else:
-            self._stream.feed(data.decode('utf8'))
-            self._raw_byte_output = self._raw_byte_output + data
+            self.stream.feed(data.decode('utf8'))
+            self.raw_byte_output = self.raw_byte_output + data
             self._check()
 
     def _check(self):
@@ -215,7 +214,7 @@ class IProcessHandle(object):
 
         if self._task is not None:
             if isinstance(self._task, Condition):
-                iscreen = IScreen(self._screen, self._raw_byte_output)
+                iscreen = IScreen(self.screen, self.raw_byte_output)
 
                 if self._task.value(iscreen):
                     self._reset_timeout()
@@ -223,17 +222,17 @@ class IProcessHandle(object):
                     self._task = None
             if isinstance(self._task, TakeScreenshot):
                 self.response_queue.put(Screenshot(
-                    "\n".join(line for line in self._screen.display)
+                    "\n".join(line for line in self.screen.display)
                 ))
                 self._task = None
 
     def _reset_timeout(self):
-        if self._timeout is not None:
+        if self.timeout is not None:
             if self.timeout_handle is not None:
                 self.timeout_handle.close()
                 self.timeout_handle = None
             self.timeout_handle = pyuv.Timer(self.loop)
-            self.timeout_handle.start(self._timeout_handler, self._timeout, 0)
+            self.timeout_handle.start(self._timeout_handler, self.timeout, 0)
 
     def _close_handles(self):
         self._closing = True
@@ -255,6 +254,10 @@ class ICommand(object):
         assert isinstance(command, commandlib.Command), "must be type 'commandlib.Command'"
         self._command = command
         self._timeout = None
+    
+    @property
+    def timeout(self):
+        return self._timeout
 
     def with_timeout(self, value):
         assert type(value) is float, "timeout value must be a float"
