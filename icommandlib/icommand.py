@@ -138,11 +138,20 @@ class IScreen(object):
 
 class IProcessHandle(object):
     """
-    Starts and then manages and interacts with the process directly.
+    Starts and then manages with the process directly.
+    
+    The IProcessHandle operates in its own thread which operates upon
+    the following events:
+    
+    * The process ending of its own accord.
+    * The process spitting out a chunk of output (which is fed into
+    a virtual terminal).
+    * A timer (used for timing out other events).
+    * Messages from the process thread.
     """
     def __init__(self, icommand, request_queue, response_queue):
-        self._request_queue = request_queue
-        self._response_queue = response_queue
+        self.request_queue = request_queue       # Messages from master thread
+        self.response_queue = response_queue     # Messages to master thread
         self._icommand = icommand
         self._master, self._slave = pty.openpty()
         self._stream = pyte.Stream()
@@ -150,7 +159,6 @@ class IProcessHandle(object):
         self._stream.attach(self._screen)
         self._timeout_triggered = False
         self._raw_byte_output = b''
-        self._closing = False
         self._timeout = icommand._timeout
         self._task = None
         self._start_time = time.time()
@@ -163,14 +171,16 @@ class IProcessHandle(object):
             env=icommand._command.env,
         )
 
-        self._response_queue.put(
-            ProcessStartedMessage(RunningProcess(self.pid, self._master))
+        self.response_queue.put(
+            ProcessStartedMessage(RunningProcess(
+                self._process.pid, self._master
+            ))
         )
 
         self.loop = pyuv.Loop.default_loop()
 
         self.async = pyuv.Async(self.loop, self._on_thread_callback)
-        self._response_queue.put(AsyncSendMethodMessage(self.async.send))
+        self.response_queue.put(AsyncSendMethodMessage(self.async.send))
 
         self.tty = pyuv.TTY(self.loop, self._master, True)
         self.tty.start_read(self._on_tty_read)
@@ -180,29 +190,13 @@ class IProcessHandle(object):
 
         self.loop.run()
 
-    @property
-    def timeout(self):
-        return self._timeout
-
-    @timeout.setter
-    def timeout(self, value):
-        assert type(value) is float, "timeout value must be a float"
-        self._timeout = value
-
-    @property
-    def pid(self):
-        return self._process.pid
-
-    @property
-    def psutil(self):
-        return psutil.Process(self.pid)
 
     def _on_thread_callback(self, async_handle):
         self._check()
 
     def _timeout_handler(self, timer_handle):
         self._close_handles()
-        self._response_queue.put(TimeoutMessage(self._timeout))
+        self.response_queue.put(TimeoutMessage(self._timeout))
 
     def _on_tty_read(self, handle, data, error):
         if data is None:
@@ -215,7 +209,7 @@ class IProcessHandle(object):
     def _check(self):
         if self._task is None:
             try:
-                self._task = self._request_queue.get(block=False)
+                self._task = self.request_queue.get(block=False)
             except queue.Empty:
                 self._task = None
 
@@ -225,10 +219,10 @@ class IProcessHandle(object):
 
                 if self._task.value(iscreen):
                     self._reset_timeout()
-                    self._response_queue.put(OutputMatched())
+                    self.response_queue.put(OutputMatched())
                     self._task = None
             if isinstance(self._task, TakeScreenshot):
-                self._response_queue.put(Screenshot(
+                self.response_queue.put(Screenshot(
                     "\n".join(line for line in self._screen.display)
                 ))
                 self._task = None
