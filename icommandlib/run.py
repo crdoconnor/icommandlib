@@ -37,16 +37,16 @@ class IProcessHandle(object):
     def __init__(self, icommand, request_queue, response_queue):
         self.request_queue = request_queue       # Messages from master thread
         self.response_queue = response_queue     # Messages to master thread
-        self._icommand = icommand
+
         self.master_fd, self.slave_fd = pty.openpty()
         self.stream = pyte.Stream()
         self.screen = pyte.Screen(80, 24)
         self.stream.attach(self.screen)
         self.raw_byte_output = b''
         self.timeout = icommand.timeout
-        self._task = None
-        self._start_time = time.time()
-        self._process = subprocess.Popen(
+        self.task = None
+
+        self.process = subprocess.Popen(
             icommand._command.arguments,
             bufsize=0,  # Ensures that all stdout/err is pushed to us immediately.
             stdout=self.slave_fd,
@@ -57,7 +57,7 @@ class IProcessHandle(object):
 
         self.response_queue.put(
             message.ProcessStartedMessage(message.RunningProcess(
-                self._process.pid, self.master_fd
+                self.process.pid, self.master_fd
             ))
         )
 
@@ -90,25 +90,25 @@ class IProcessHandle(object):
             self._check()
 
     def _check(self):
-        if self._task is None:
+        if self.task is None:
             try:
-                self._task = self.request_queue.get(block=False)
+                self.task = self.request_queue.get(block=False)
             except queue.Empty:
-                self._task = None
+                self.task = None
 
-        if self._task is not None:
-            if isinstance(self._task, message.Condition):
+        if self.task is not None:
+            if isinstance(self.task, message.Condition):
                 iscreen = IScreen(self.screen, self.raw_byte_output)
 
-                if self._task.value(iscreen):
+                if self.task.value(iscreen):
                     self._reset_timeout()
                     self.response_queue.put(message.OutputMatched())
-                    self._task = None
-            if isinstance(self._task, message.TakeScreenshot):
+                    self.task = None
+            if isinstance(self.task, message.TakeScreenshot):
                 self.response_queue.put(message.Screenshot(
                     "\n".join(line for line in self.screen.display)
                 ))
-                self._task = None
+                self.task = None
 
     def _reset_timeout(self):
         if self.timeout is not None:
@@ -119,7 +119,6 @@ class IProcessHandle(object):
             self.timeout_handle.start(self._timeout_handler, self.timeout, 0)
 
     def _close_handles(self):
-        self._closing = True
         if self.timeout_handle is not None and not self.timeout_handle.closed:
             self.timeout_handle.close()
             self.timeout_handle = None
