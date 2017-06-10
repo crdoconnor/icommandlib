@@ -38,6 +38,10 @@ class ExitMessage(Message):
     pass
 
 
+class ExceptionMessage(Message):
+    pass
+
+
 class ProcessStartedMessage(Message):
     pass
 

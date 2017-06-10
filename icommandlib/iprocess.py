@@ -26,6 +26,8 @@ class IProcess(object):
 
     def _expect_message(self, of_kind):
         response = self._response_queue.get()
+        if isinstance(response, message.ExceptionMessage):
+            raise response.value
         if isinstance(response, message.TimeoutMessage):
             raise exceptions.IProcessTimeout(
                 "Timed out after {0} seconds.".format(response.value)
@@ -46,19 +48,22 @@ class IProcess(object):
             )
         return response.value
 
-    def wait_until_output_contains(self, text):
+    def wait_until(self, condition_function):
         self._request_queue.put(message.Condition(
-            lambda iscreen: text in iscreen.raw_bytes.decode('utf8')
+            condition_function
         ))
         self._async_send()
         self._expect_message(message.OutputMatched)
 
+    def wait_until_output_contains(self, text):
+        self.wait_until(
+            lambda iscreen: text in iscreen.raw_bytes.decode('utf8')
+        )
+
     def wait_until_on_screen(self, text):
-        self._request_queue.put(message.Condition(
+        self.wait_until(
             lambda iscreen: len([line for line in iscreen.display if text in line]) > 0
-        ))
-        self._async_send()
-        self._expect_message(message.OutputMatched)
+        )
 
     def send_keys(self, text):
         os.write(self._master_fd, text.encode('utf8'))

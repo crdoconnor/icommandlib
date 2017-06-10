@@ -23,10 +23,12 @@ Screenshot:
         process.send_keys("red\n")
 
         process.wait_until_output_contains("RED")
-        process.wait_for_finish()
 
         with open("screenshot.txt", "w") as handle:
             handle.write(process.screenshot())
+
+        process.wait_for_finish()
+
     - File contents will be:
         filename: screenshot.txt
         reference: screenshot

@@ -18,6 +18,10 @@ class IScreen(object):
     def display(self):
         return self.screen.display
 
+    @property
+    def text(self):
+        return '\n'.join(self.display)
+
 
 class IProcessHandle(object):
     """
@@ -33,57 +37,61 @@ class IProcessHandle(object):
     * Messages from the process thread.
     """
     def __init__(self, icommand, request_queue, response_queue):
-        self.request_queue = request_queue       # Messages from master thread
-        self.response_queue = response_queue     # Messages to master thread
+        try:
+            self.request_queue = request_queue       # Messages from master thread
+            self.response_queue = response_queue     # Messages to master thread
 
-        self.master_fd, self.slave_fd = pty.openpty()
-        self.stream = pyte.Stream()
-        self.screen = pyte.Screen(80, 24)
-        self.stream.attach(self.screen)
-        self.raw_byte_output = b''
-        self.timeout = icommand.timeout
-        self.task = None
+            self.master_fd, self.slave_fd = pty.openpty()
+            self.stream = pyte.Stream()
+            self.screen = pyte.Screen(80, 24)
+            self.stream.attach(self.screen)
+            self.raw_byte_output = b''
+            self.timeout = icommand.timeout
+            self.task = None
 
-        self.loop = pyuv.Loop.default_loop()
+            self.loop = pyuv.Loop.default_loop()
 
-        self.tty = pyuv.TTY(self.loop, self.master_fd, True)
-        self.tty.start_read(self.on_tty_read)
+            self.tty = pyuv.TTY(self.loop, self.master_fd, True)
+            self.tty.start_read(self.on_tty_read)
 
-        self.process = pyuv.Process.spawn(
-            self.loop,
-            args=icommand._command.arguments,
-            env=icommand._command.env,
-            cwd=icommand._command.directory,
-            exit_callback=self.on_exit,
-            stdio=[
-                pyuv.StdIO(
-                    fd=self.slave_fd,
-                    flags=pyuv.UV_INHERIT_FD,
-                ),
-                pyuv.StdIO(
-                    fd=self.slave_fd,
-                    flags=pyuv.UV_INHERIT_FD,
-                ),
-                pyuv.StdIO(
-                    fd=self.slave_fd,
-                    flags=pyuv.UV_INHERIT_FD,
-                ),
-            ]
-        )
+            self.process = pyuv.Process.spawn(
+                self.loop,
+                args=icommand._command.arguments,
+                env=icommand._command.env,
+                cwd=icommand._command.directory,
+                exit_callback=self.on_exit,
+                stdio=[
+                    pyuv.StdIO(
+                        fd=self.slave_fd,
+                        flags=pyuv.UV_INHERIT_FD,
+                    ),
+                    pyuv.StdIO(
+                        fd=self.slave_fd,
+                        flags=pyuv.UV_INHERIT_FD,
+                    ),
+                    pyuv.StdIO(
+                        fd=self.slave_fd,
+                        flags=pyuv.UV_INHERIT_FD,
+                    ),
+                ]
+            )
 
-        self.response_queue.put(
-            message.ProcessStartedMessage(message.RunningProcess(
-                self.process.pid, self.master_fd
-            ))
-        )
+            self.response_queue.put(
+                message.ProcessStartedMessage(message.RunningProcess(
+                    self.process.pid, self.master_fd
+                ))
+            )
 
-        self.async = pyuv.Async(self.loop, self.on_thread_callback)
-        self.response_queue.put(message.AsyncSendMethodMessage(self.async.send))
+            self.async = pyuv.Async(self.loop, self.on_thread_callback)
+            self.response_queue.put(message.AsyncSendMethodMessage(self.async.send))
 
-        self.timeout_handle = None
-        self.reset_timeout()
+            self.timeout_handle = None
+            self.reset_timeout()
 
-        self.loop.run()
+            self.loop.run()
+        except Exception as error:
+            self.close_handles()
+            self.response_queue.put(message.ExceptionMessage(error))
 
     def on_thread_callback(self, async_handle):
         self.check()
@@ -94,6 +102,7 @@ class IProcessHandle(object):
 
     def on_exit(self, proc, exit_status, term_signal):
         self.check()
+        self.close_handles()
         self.response_queue.put(
             message.ExitMessage(message.FinishedProcess(
                 exit_status,
@@ -111,25 +120,29 @@ class IProcessHandle(object):
             self.check()
 
     def check(self):
-        if self.task is None:
-            try:
-                self.task = self.request_queue.get(block=False)
-            except queue.Empty:
-                self.task = None
-
-        if self.task is not None:
-            if isinstance(self.task, message.Condition):
-                iscreen = IScreen(self.screen, self.raw_byte_output)
-
-                if self.task.value(iscreen):
-                    self.reset_timeout()
-                    self.response_queue.put(message.OutputMatched())
+        try:
+            if self.task is None:
+                try:
+                    self.task = self.request_queue.get(block=False)
+                except queue.Empty:
                     self.task = None
-            if isinstance(self.task, message.TakeScreenshot):
-                self.response_queue.put(message.Screenshot(
-                    "\n".join(line for line in self.screen.display)
-                ))
-                self.task = None
+
+            if self.task is not None:
+                if isinstance(self.task, message.Condition):
+                    iscreen = IScreen(self.screen, self.raw_byte_output)
+
+                    if self.task.value(iscreen):
+                        self.reset_timeout()
+                        self.response_queue.put(message.OutputMatched())
+                        self.task = None
+                if isinstance(self.task, message.TakeScreenshot):
+                    self.response_queue.put(message.Screenshot(
+                        "\n".join(line for line in self.screen.display)
+                    ))
+                    self.task = None
+        except Exception as error:
+            self.close_handles()
+            self.response_queue.put(message.ExceptionMessage(error))
 
     def reset_timeout(self):
         if self.timeout is not None:
@@ -146,3 +159,9 @@ class IProcessHandle(object):
         if not self.tty.closed:
             self.tty.close()
             self.tty = None
+        if not self.async.closed:
+            self.async.close()
+            self.async = None
+        if not self.process.closed:
+            self.process.close()
+            self.process = None
