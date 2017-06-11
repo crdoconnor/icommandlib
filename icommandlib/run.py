@@ -43,7 +43,7 @@ class IProcessHandle(object):
 
             self.master_fd, self.slave_fd = pty.openpty()
             self.stream = pyte.Stream()
-            self.screen = pyte.Screen(80, 24)
+            self.screen = pyte.Screen(icommand.width, icommand.height)
             self.stream.attach(self.screen)
             self.raw_byte_output = b''
             self.timeout = icommand.timeout
