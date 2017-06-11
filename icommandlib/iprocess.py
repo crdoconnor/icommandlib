@@ -8,6 +8,11 @@ import queue
 
 
 class IProcess(object):
+    """
+    An interactive process.
+
+        Start process by initializing with an ICommand object.
+    """
     def __init__(self, icommand):
         self._icommand = icommand
         self._request_queue = queue.Queue()
