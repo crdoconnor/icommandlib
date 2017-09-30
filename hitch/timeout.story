@@ -26,24 +26,18 @@ Timeout:
         time.sleep(1.0)
         answer = prompt("favorite country:")
         print(answer)
+    setup: |
+      from icommandlib import ICommand
+      from commandlib import python
+
+      process = ICommand(python("favoritecolor.py")).with_timeout(0.5).run()
+    code: |
+      process.wait_until_output_contains("favorite color:")
+      process.send_keys("blue\n")
+      process.wait_until_output_contains("favorite film:")
+      process.send_keys("usual suspects\n")
+      process.wait_until_output_contains("favorite country:")
   scenario:
-    - Run: |
-        from icommandlib import ICommand
-        from commandlib import python
-
-        process = ICommand(python("favoritecolor.py")).with_timeout(0.5).run()
-
-    - Run: |
-        process.wait_until_output_contains("favorite color:")
-
-    - Run: |
-        process.send_keys("blue\n")
-
-    - Run: |
-        process.wait_until_output_contains("favorite film:")
-        process.send_keys("usual suspects\n")
-
-
-    - Exception is raised:
-        command: process.wait_until_output_contains("favorite country:")
-        exception: Timed out after 0.5 seconds.
+    - Raises Exception:
+        exception type: icommandlib.exceptions.IProcessTimeout
+        message: Timed out after 0.5 seconds.

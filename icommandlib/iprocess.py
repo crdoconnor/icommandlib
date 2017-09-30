@@ -1,9 +1,7 @@
-from icommandlib import exceptions
-import threading
-import psutil
-import os
 from icommandlib import messages as message
 from icommandlib.run import IProcessHandle
+from icommandlib import exceptions
+import threading
 import queue
 
 
@@ -83,6 +81,7 @@ class IProcess(object):
         Send keys to the terminal process.
         """
         self._request_queue.put(message.KeyPresses(text.encode('utf8')))
+        self._async_send()
 
     def screenshot(self):
         """

@@ -27,29 +27,21 @@ Prompts:
 
         time.sleep(0.5)
         sys.exit(0)
-  scenario:
-    - Run: |
-        from icommandlib import ICommand
-        from commandlib import python
+    setup: |
+      from icommandlib import ICommand
+      from commandlib import python
 
-        process = ICommand(python("favoritecolor.py")).run()
-
-    - Run: |
-        process.wait_until_output_contains("favorite color:")
-
-    - Run: |
-        process.send_keys("red\n")
-        process.wait_until_output_contains("favorite movie:")
-
-    - Run: |
-        process.send_keys("the usual suspects\n")
-
-    - Run: |
-        # should still be on screen from before
-        process.wait_until_on_screen("favorite color")
+      process = ICommand(python("favoritecolor.py")).run()
     
-    - Run: |
-        process.wait_for_finish()
+    code: |
+      process.wait_until_output_contains("favorite color:")
+      process.send_keys("red\n")
+      process.wait_until_output_contains("favorite movie:")
+      process.send_keys("the usual suspects\n")
+      process.wait_until_on_screen("favorite color")
+      process.wait_for_finish()
+  scenario:
+    - Run code
     - File contents will be:
         filename: color.txt
         text: red

@@ -1,8 +1,9 @@
-from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
-from hitchrun import Path, hitch_maintenance, expected
+from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate, expected_exception
+from hitchrun import expected, DIR
 from commandlib import Command
 from pathquery import pathq
-from strictyaml import MapPattern, Map, Str, Int, Float
+from strictyaml import MapPattern, Map, Str, Int, Float, Optional
+from hitchrunpy import HitchRunPyException, ExamplePythonCode, ExpectedExceptionMessageWasDifferent
 from commandlib import python
 import hitchpython
 import hitchserve
@@ -10,35 +11,24 @@ import strictyaml
 import hitchtest
 
 
-KEYPATH = Path(__file__).abspath().dirname()
-git = Command("git").in_dir(KEYPATH.parent)
-
-
-class Paths(object):
-    def __init__(self, keypath):
-        self.keypath = keypath
-        self.project = keypath.parent
-        self.state = keypath.parent.joinpath("state")
-        self.engine = keypath
-
 
 class Engine(BaseEngine):
     schema = StorySchema(
-        preconditions=Map({
-            "files": MapPattern(Str(), Str()),
-            "variables": MapPattern(Str(), Str()),
-            "python version": Str(),
-        }),
-        params=Map({
-            "python version": Str(),
-        }),
+        preconditions={
+            Optional("files"): MapPattern(Str(), Str()),
+            Optional("variables"): MapPattern(Str(), Str()),
+            Optional("python version"): Str(),
+            Optional("setup"): Str(),
+            Optional("code"): Str(),
+        },
     )
 
-    def __init__(self, keypath, settings):
-        self.path = Paths(keypath)
+    def __init__(self, pathgroup, settings):
+        self.path = pathgroup
         self.settings = settings
 
     def set_up(self):
+        self.path.state = self.path.gen.joinpath("state")
         if self.path.state.exists():
             self.path.state.rmtree(ignore_errors=True)
         self.path.state.mkdir()
@@ -55,7 +45,7 @@ class Engine(BaseEngine):
                 filepath.dirname().mkdir()
             filepath.write_text(str(text))
 
-        self.path.engine.joinpath("code_that_does_things.py").copy(self.path.state)
+        self.path.key.joinpath("code_that_does_things.py").copy(self.path.state)
 
         self.python_package = hitchpython.PythonPackage(
             self.preconditions.get('python_version', self.preconditions['python version'])
@@ -65,42 +55,56 @@ class Engine(BaseEngine):
         self.pip = self.python_package.cmd.pip
         self.python = self.python_package.cmd.python
 
-        with hitchtest.monitor([self.path.keypath.joinpath("debugrequirements.txt")]) as changed:
+        with hitchtest.monitor([self.path.key.joinpath("debugrequirements.txt")]) as changed:
             if changed:
-                self.pip("install", "-r", "debugrequirements.txt").in_dir(self.path.keypath).run()
+                self.pip("install", "-r", "debugrequirements.txt").in_dir(self.path.key).run()
 
         self.pip("uninstall", "icommandlib", "-y").ignore_errors().run()
         self.pip("install", ".").in_dir(self.path.project).run()
-
-        self.services = hitchserve.ServiceBundle(
-            str(self.path.project),
-            startup_timeout=8.0,
-            shutdown_timeout=1.0
+        
+        self.example_py_code = ExamplePythonCode(
+            self.preconditions.get('code', '')
+        ).with_setup_code(
+            self.preconditions.get('setup', '')
         )
+    
+    @expected_exception(HitchRunPyException)
+    def run_code(self):
+        self.result = self.example_py_code.run(self.path.state, self.python)
 
-        self.services['IPython'] = hitchpython.IPythonKernelService(self.python_package)
+    @expected_exception(HitchRunPyException)
+    @validate(
+        exception_type=Map({"in python 2": Str(), "in python 3": Str()}) | Str(),
+        message=Map({"in python 2": Str(), "in python 3": Str()}) | Str(),
+    )
+    def raises_exception(self, exception_type=None, message=None):
+        """
+        Expect an exception.
+        """
+        differential = False
 
-        self.services.startup(interactive=False)
-        self.ipython_kernel_filename = self.services['IPython'].wait_and_get_ipykernel_filename()
-        self.ipython_step_library = hitchpython.IPythonStepLibrary()
-        self.ipython_step_library.startup_connection(self.ipython_kernel_filename)
+        if exception_type is not None:
+            if not isinstance(exception_type, str):
+                differential = True
+                exception_type = exception_type['in python 2']\
+                    if self.preconditions['python version'].startswith("2")\
+                    else exception_type['in python 3']
 
-        self.run("import os")
-        self.run("from path import Path")
-        self.run("os.chdir('{}')".format(self.path.state))
-        self.run("from code_that_does_things import *")
+        if message is not None:
+            if not isinstance(message, str):
+                differential = True
+                message = message['in python 2']\
+                    if self.preconditions['python version'].startswith("2")\
+                    else message['in python 3']
 
-        for var, value in self.preconditions.get("variables", {}).items():
-            self.run("{0} = Path('{0}').bytes().decode('utf8')".format(var))
-
-    def run(self, command):
-        self.ipython_step_library.run(command)
-
-    def assert_true(self, command):
-        self.ipython_step_library.assert_true(command)
-
-    def exception_is_raised(self, command, exception):
-        self.ipython_step_library.assert_exception(command, exception)
+        try:
+            result = self.example_py_code.expect_exceptions().run(self.path.state, self.python)
+            result.exception_was_raised(exception_type, message)
+        except ExpectedExceptionMessageWasDifferent as error:
+            if self.settings.get("rewrite") and not differential:
+                self.current_step.update(message=error.actual_message)
+            else:
+                raise
 
     def touch_file(self, filename):
         self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)
@@ -115,7 +119,7 @@ class Engine(BaseEngine):
                     content,
                 ))
 
-        artefact = self.path.engine.joinpath(
+        artefact = self.path.key.joinpath(
             "artefacts", "{0}.txt".format(reference.replace(" ", "-").lower())
         )
 
@@ -135,16 +139,15 @@ class Engine(BaseEngine):
             artefact.write_text(simex_contents)
         else:
             if self.settings.get('overwrite artefacts'):
-                artefact.write_text(simex_contents)
-                self.services.log(content)
+                if artefact.bytes().decode('utf8') != simex_contents:
+                    artefact.write_text(simex_contents)
+                    print(content)
             else:
                 if simex.compile(artefact.bytes().decode('utf8')).match(content) is None:
                     raise RuntimeError("Expected to find:\n{0}\n\nActual output:\n{1}".format(
                         artefact.bytes().decode('utf8'),
                         content,
                     ))
-                else:
-                    self.services.log(content)
 
     def file_contents_will_be(self, filename, text=None, reference=None, changeable=None):
         output_contents = self.path.state.joinpath(filename).bytes().decode('utf8')
@@ -159,67 +162,27 @@ class Engine(BaseEngine):
         import time
         time.sleep(float(seconds))
 
-    def shell(self):
-        if hasattr(self, 'services'):
-            self.services.start_interactive_mode()
-            import sys
-            import time
-            from os import path
-            from subprocess import call
-            time.sleep(0.5)
-            if path.exists(path.join(
-                path.expanduser("~"), ".ipython/profile_default/security/",
-                self.ipython_kernel_filename)
-            ):
-                call([
-                        sys.executable, "-m", "IPython", "console",
-                        "--existing",
-                        path.join(
-                            path.expanduser("~"),
-                            ".ipython/profile_default/security/",
-                            self.ipython_kernel_filename
-                        )
-                    ])
-            else:
-                call([
-                    sys.executable, "-m", "IPython", "console",
-                    "--existing", self.ipython_kernel_filename
-                ])
-            self.services.stop_interactive_mode()
-
-    def on_failure(self):
-        self.shell()
-
-    def tear_down(self):
-        """Clean out the state directory."""
-        try:
-            self.shutdown_connection()
-        except:
-            pass
-        if hasattr(self, 'services'):
-            self.services.shutdown()
-
 
 @expected(strictyaml.exceptions.YAMLValidationError)
 @expected(exceptions.HitchStoryException)
-def test(*words):
+def tdd(*words):
     """
     Run test with words.
     """
     print(
         StoryCollection(
-            pathq(KEYPATH).ext("story"), Engine(KEYPATH, {"overwrite artefacts": True})
+            pathq(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": True})
         ).shortcut(*words).play().report()
     )
 
 
-def ci():
+def regression():
     """
     Run all stories.
     """
     print(
         StoryCollection(
-            pathq(KEYPATH).ext("story"), Engine(KEYPATH, {})
+            pathq(DIR.key).ext("story"), Engine(DIR, {})
         ).ordered_by_name().play().report()
     )
 
@@ -236,12 +199,12 @@ def lint():
     Lint all code.
     """
     python("-m", "flake8")(
-        KEYPATH.parent.joinpath("icommandlib"),
+        DIR.project.joinpath("icommandlib"),
         "--max-line-length=100",
         "--exclude=__init__.py",
     ).run()
     python("-m", "flake8")(
-        KEYPATH.joinpath("key.py"),
+        DIR.key.joinpath("key.py"),
         "--max-line-length=100",
         "--exclude=__init__.py",
     ).run()

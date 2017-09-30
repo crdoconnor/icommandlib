@@ -4,8 +4,7 @@ tmp/
 .cache
 icommandlib.egg-info/
 __pycache__
-hitch/hitchdir
-state/
+hitch/gen
 *.pyc
 *.kate-swp
 
