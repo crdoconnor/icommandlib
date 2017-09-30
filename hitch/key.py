@@ -57,8 +57,10 @@ class Engine(BaseEngine):
             if changed:
                 self.pip("install", "-r", "debugrequirements.txt").in_dir(self.path.key).run()
 
-        self.pip("uninstall", "icommandlib", "-y").ignore_errors().run()
-        self.pip("install", ".").in_dir(self.path.project).run()
+        with hitchtest.monitor(pathq(self.path.project.joinpath("icommandlib")).ext("py")) as changed:
+            if changed:
+                self.pip("uninstall", "icommandlib", "-y").ignore_errors().run()
+                self.pip("install", ".").in_dir(self.path.project).run()
 
         self.example_py_code = ExamplePythonCode(
             self.preconditions.get('code', '')
