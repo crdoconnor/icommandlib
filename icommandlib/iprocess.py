@@ -61,22 +61,40 @@ class IProcess(object):
         self._expect_message(message.OutputMatched)
 
     def wait_until_output_contains(self, text):
+        """
+        Wait until the totality of the output of the process contains
+        at least one instance of 'text'.
+        """
         self.wait_until(
             lambda iscreen: text in iscreen.raw_bytes.decode('utf8')
         )
 
     def wait_until_on_screen(self, text):
+        """
+        Waits until the text specified appears on the process's terminal
+        screen.
+        """
         self.wait_until(
             lambda iscreen: len([line for line in iscreen.display if text in line]) > 0
         )
 
     def send_keys(self, text):
-        os.write(self._master_fd, text.encode('utf8'))
+        """
+        Send keys to the terminal process.
+        """
+        self._request_queue.put(message.KeyPresses(text.encode('utf8')))
 
     def screenshot(self):
+        """
+        Get a screenshot of the terminal window of the running process.
+        """
         self._request_queue.put(message.TakeScreenshot())
         self._async_send()
         return self._expect_message(message.Screenshot)
 
     def wait_for_finish(self):
+        """
+        Wait until the process has closed. Raises exception if
+        the process is still open after timeout.
+        """
         self._expect_message(message.ExitMessage)

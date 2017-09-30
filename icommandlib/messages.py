@@ -59,6 +59,10 @@ class TimeoutMessage(Message):
     pass
 
 
+class KeyPresses(Message):
+    pass
+
+
 class TakeScreenshot(Message):
     def __init__(self):
         self._value = None

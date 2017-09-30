@@ -1,14 +1,15 @@
+from icommandlib import messages as message
 import queue
 import pyte
 import pyuv
-from icommandlib import messages as message
 import pty
+import os
 
 
 class IScreen(object):
     """
     Represents the output of a process, either as raw bytes
-    or on a virtual terminal.
+    or a virtual terminal.
     """
     def __init__(self, screen, raw_byte_output):
         self.screen = screen
@@ -94,13 +95,28 @@ class IProcessHandle(object):
             self.response_queue.put(message.ExceptionMessage(error))
 
     def on_thread_callback(self, async_handle):
+        """
+        This is the callback that is triggered when self.async.send()
+        (the only threadsafe method on this class) is called from
+        IProcess to indicate a message waiting on the request queue.
+        """
         self.check()
 
     def timeout_handler(self, timer_handle):
+        """
+        Callback that is triggered by the timer indicating a timeout.
+
+        The timer is reset every time a condition is met.
+        """
         self.close_handles()
         self.response_queue.put(message.TimeoutMessage(self.timeout))
 
     def on_exit(self, proc, exit_status, term_signal):
+        """
+        Callback that is triggered when the process exits of its
+        own accord. Takes a screenshot and tells the control thread
+        that we're done.
+        """
         self.check()
         self.close_handles()
         self.response_queue.put(
@@ -112,6 +128,10 @@ class IProcessHandle(object):
         )
 
     def on_tty_read(self, handle, data, error):
+        """
+        Callback that is triggered when the process spews a chunk
+        of data.
+        """
         if data is None:
             pass
         else:
@@ -120,6 +140,10 @@ class IProcessHandle(object):
             self.check()
 
     def check(self):
+        """
+        Callback that is triggered when there is (probably) a message
+        waiting on the request queue.
+        """
         try:
             if self.task is None:
                 try:
@@ -128,6 +152,9 @@ class IProcessHandle(object):
                     self.task = None
 
             if self.task is not None:
+                if isinstance(self.task, message.KeyPresses):
+                    os.write(self.master_fd, self.task.value)
+                    self.task = None
                 if isinstance(self.task, message.Condition):
                     iscreen = IScreen(self.screen, self.raw_byte_output)
 
@@ -145,6 +172,9 @@ class IProcessHandle(object):
             self.response_queue.put(message.ExceptionMessage(error))
 
     def reset_timeout(self):
+        """
+        Clears the timeout handle and sets a new one.
+        """
         if self.timeout is not None:
             if self.timeout_handle is not None:
                 self.timeout_handle.close()
@@ -153,6 +183,9 @@ class IProcessHandle(object):
             self.timeout_handle.start(self.timeout_handler, self.timeout, 0)
 
     def close_handles(self):
+        """
+        Shut down all the callbacks.
+        """
         if self.timeout_handle is not None and not self.timeout_handle.closed:
             self.timeout_handle.close()
             self.timeout_handle = None

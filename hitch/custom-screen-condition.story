@@ -31,13 +31,18 @@ Custom Screen Condition:
             raise_example_exception()
 
     - Run: |
-        process = ICommand(python("favoritecolor.py")).run()
+        process = ICommand(python("favoritecolor.py")).with_timeout(0.5).run()
 
     - Run: |
         process.wait_until(check_for_favorite_color)
 
     - Run: |
         process.send_keys("blue\n")
+    
+    - Run: |
+        process.wait_for_finish()
+
+    #- Sleep: 1
 
     - File contents will be:
         filename: color.txt

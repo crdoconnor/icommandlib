@@ -2,7 +2,7 @@ from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, val
 from hitchrun import Path, hitch_maintenance, expected
 from commandlib import Command
 from pathquery import pathq
-from strictyaml import MapPattern, Map, Str, Int
+from strictyaml import MapPattern, Map, Str, Int, Float
 from commandlib import python
 import hitchpython
 import hitchserve
@@ -154,10 +154,10 @@ class Engine(BaseEngine):
         output_contents = self.path.state.joinpath("output.txt").bytes().decode('utf8')
         self._will_be(output_contents, text, reference, changeable)
 
-    @validate(seconds=Int())
+    @validate(seconds=Float())
     def sleep(self, seconds):
         import time
-        time.sleep(int(seconds))
+        time.sleep(float(seconds))
 
     def shell(self):
         if hasattr(self, 'services'):
