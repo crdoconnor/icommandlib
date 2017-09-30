@@ -1,15 +1,13 @@
-from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate, expected_exception
+from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
+from hitchstory import expected_exception
 from hitchrun import expected, DIR
-from commandlib import Command
 from pathquery import pathq
-from strictyaml import MapPattern, Map, Str, Int, Float, Optional
+from strictyaml import MapPattern, Map, Str, Float, Optional
 from hitchrunpy import HitchRunPyException, ExamplePythonCode, ExpectedExceptionMessageWasDifferent
 from commandlib import python
 import hitchpython
-import hitchserve
 import strictyaml
 import hitchtest
-
 
 
 class Engine(BaseEngine):
@@ -61,13 +59,13 @@ class Engine(BaseEngine):
 
         self.pip("uninstall", "icommandlib", "-y").ignore_errors().run()
         self.pip("install", ".").in_dir(self.path.project).run()
-        
+
         self.example_py_code = ExamplePythonCode(
             self.preconditions.get('code', '')
         ).with_setup_code(
             self.preconditions.get('setup', '')
         )
-    
+
     @expected_exception(HitchRunPyException)
     def run_code(self):
         self.result = self.example_py_code.run(self.path.state, self.python)
@@ -185,13 +183,6 @@ def regression():
             pathq(DIR.key).ext("story"), Engine(DIR, {})
         ).ordered_by_name().play().report()
     )
-
-
-def hitch(*args):
-    """
-    Use 'h hitch --help' to get help on these commands.
-    """
-    hitch_maintenance(*args)
 
 
 def lint():
