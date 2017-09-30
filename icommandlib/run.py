@@ -8,8 +8,8 @@ import os
 
 class IScreen(object):
     """
-    Represents the output of a process, either as raw bytes
-    or a virtual terminal.
+    Represents the output of a process, both as raw bytes
+    and a virtual terminal (screen).
     """
     def __init__(self, screen, raw_byte_output):
         self.screen = screen

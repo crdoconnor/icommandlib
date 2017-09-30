@@ -9,7 +9,7 @@ class IProcess(object):
     """
     An interactive process.
 
-        Start process by initializing with an ICommand object.
+        Start process by initializing with an commandlib.Command object.
     """
     def __init__(self, icommand):
         self._icommand = icommand
