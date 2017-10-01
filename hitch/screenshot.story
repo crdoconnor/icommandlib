@@ -28,8 +28,14 @@ Screenshot:
           handle.write(process.screenshot())
 
       process.wait_for_finish()
+      
+      with open("finalscreenshot.txt", "w") as handle:
+          handle.write(process.final_screenshot)
   scenario:
     - Run code
     - File contents will be:
         filename: screenshot.txt
         reference: screenshot
+    - File contents will be:
+        filename: finalscreenshot.txt
+        reference: finalscreenshot

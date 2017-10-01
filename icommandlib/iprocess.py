@@ -27,6 +27,8 @@ class IProcess(object):
         self._pid = self._running_process._pid
         self._master_fd = self._running_process._stdin
         self._async_send = self._expect_message(message.AsyncSendMethodMessage)
+        
+        self.final_screenshot = None
 
     def _expect_message(self, of_kind):
         response = self._response_queue.get()
@@ -36,14 +38,16 @@ class IProcess(object):
             raise exceptions.IProcessTimeout(
                 "Timed out after {0} seconds.".format(response.value)
             )
-        if of_kind != message.ExitMessage:
-            if isinstance(response, message.ExitMessage):
+        if isinstance(response, message.ExitMessage):
+            if of_kind != message.ExitMessage:
                 raise exceptions.UnexpectedExit(
                     "\n\n{0}\n\nProcess unexpectedly exited with exit_code {1}".format(
                         response.value.screenshot.strip(),
                         response.value.exit_status,
                     )
                 )
+            else:
+                self.final_screenshot = response.value.screenshot
         if not isinstance(response, of_kind):
             raise Exception(
                 "Threading error expected {0} got {1}".format(
