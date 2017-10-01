@@ -2,7 +2,7 @@ from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, val
 from hitchstory import expected_exception
 from hitchrun import expected, DIR
 from pathquery import pathq
-from strictyaml import MapPattern, Map, Str, Float, Optional
+from strictyaml import MapPattern, Map, Str, Float, Optional, Seq
 from hitchrunpy import HitchRunPyException, ExamplePythonCode, ExpectedExceptionMessageWasDifferent
 from commandlib import python
 import hitchpython
@@ -105,6 +105,21 @@ class Engine(BaseEngine):
                 self.current_step.update(message=error.actual_message)
             else:
                 raise
+    
+    @validate(from_filenames=Seq(Str()))
+    def processes_not_alive(self, from_filenames=None):
+        still_alive = []
+        for from_filename in from_filenames:
+            import psutil
+            pid = int(self.path.state.joinpath(from_filename).bytes().decode('utf8').strip())
+            try:
+                proc = psutil.Process(pid)
+                proc.kill()
+                still_alive.append(from_filename)
+            except psutil.NoSuchProcess:
+                pass
+        if len(still_alive) > 0:
+            raise Exception("Processes from {0} still alive.".format(', '.join(still_alive)))
 
     def touch_file(self, filename):
         self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)

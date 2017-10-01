@@ -74,7 +74,8 @@ class IProcessHandle(object):
                         fd=self.slave_fd,
                         flags=pyuv.UV_INHERIT_FD,
                     ),
-                ]
+                ],
+                flags=pyuv.UV_PROCESS_DETACHED,
             )
 
             self.response_queue.put(

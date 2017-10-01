@@ -2,6 +2,7 @@ from icommandlib import messages as message
 from icommandlib.run import IProcessHandle
 from icommandlib import exceptions
 import threading
+import psutil
 import queue
 
 
@@ -50,6 +51,14 @@ class IProcess(object):
                 )
             )
         return response.value
+    
+    @property
+    def pid(self):
+        return self._pid
+    
+    @property
+    def psutil(self):
+        return psutil.Process(self._pid)
 
     def wait_until(self, condition_function):
         self._request_queue.put(message.Condition(
@@ -97,3 +106,9 @@ class IProcess(object):
         the process is still open after timeout.
         """
         self._expect_message(message.ExitMessage)
+
+    def kill(self):
+        for descendant in self.psutil.children(recursive=True):
+              descendant.kill()
+        self.psutil.kill()
+        self.wait_for_finish()
