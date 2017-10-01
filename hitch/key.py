@@ -1,6 +1,7 @@
 from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
 from hitchstory import expected_exception
 from hitchrun import expected, DIR
+from commandlib import Command
 from pathquery import pathq
 from strictyaml import MapPattern, Map, Str, Float, Optional, Seq
 from hitchrunpy import HitchRunPyException, ExamplePythonCode, ExpectedExceptionMessageWasDifferent
