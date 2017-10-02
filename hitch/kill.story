@@ -11,18 +11,20 @@ Kill:
   preconditions:
     files:
       child.py: |
-        # Write out pid of this process so we can check if it is still alive
         import os
+        import time
         
+        # Write out pid of this process so we can check if it is still alive
         with open("child.pid", "w") as handle:
             handle.write(str(os.getpid()))
 
         # Infinite loop. This misbehaving processs needs a kill -9 to die!
         while True:
-            pass
+            time.sleep(1)
       parent.py: |
         import os
         import sys
+        import time
         import subprocess
         
         # Write out pid of this process so we can check if it is still alive
@@ -34,7 +36,7 @@ Kill:
         
         # Infinite loop. This misbehaving processs needs a kill -9 to die!
         while True:
-            pass
+            time.sleep(1)
     setup: |
       from icommandlib import ICommand
       from commandlib import python

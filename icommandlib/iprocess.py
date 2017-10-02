@@ -43,7 +43,7 @@ class IProcess(object):
                 raise exceptions.UnexpectedExit(
                     "\n\n{0}\n\nProcess unexpectedly exited with exit_code {1}".format(
                         response.value.screenshot.strip(),
-                        response.value.exit_status,
+                        response.value.exit_code,
                     )
                 )
             else:
@@ -110,6 +110,22 @@ class IProcess(object):
         the process is still open after timeout.
         """
         self._expect_message(message.ExitMessage)
+    
+    def wait_for_successful_exit(self):
+        """
+        Wait until the process exits successfully. Raises exception
+        if the process is still open after timeout or it exits
+        with an exit code other than 0.
+        """
+        response = self._expect_message(message.ExitMessage)
+
+        if response.exit_code != 0:
+            raise exceptions.ExitWithError(
+                response.exit_code,
+                response.screenshot.rstrip(),
+            )
+        
+        return response
 
     def kill(self):
         for descendant in self.psutil.children(recursive=True):

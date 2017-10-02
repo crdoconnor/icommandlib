@@ -28,8 +28,8 @@ class RunningProcess(object):
 
 
 class FinishedProcess(object):
-    def __init__(self, exit_status, term_signal, screenshot):
-        self.exit_status = exit_status
+    def __init__(self, exit_code, term_signal, screenshot):
+        self.exit_code = exit_code
         self.term_signal = term_signal
         self.screenshot = screenshot
 

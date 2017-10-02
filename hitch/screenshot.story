@@ -4,6 +4,10 @@ Screenshot:
     At any point during program execution, you should
     be able to take a screenshot of what appears on its
     virtual terminal.
+    
+    When the program finishes, it automatically takes
+    a screenshot of the final state of the screen which
+    is available in .final_screenshot.
   preconditions:
     files:
       favoritecolor.py: |
@@ -28,14 +32,8 @@ Screenshot:
           handle.write(process.screenshot())
 
       process.wait_for_finish()
-      
-      with open("finalscreenshot.txt", "w") as handle:
-          handle.write(process.final_screenshot)
   scenario:
     - Run code
     - File contents will be:
         filename: screenshot.txt
         reference: screenshot
-    - File contents will be:
-        filename: finalscreenshot.txt
-        reference: finalscreenshot
