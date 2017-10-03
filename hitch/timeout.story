@@ -9,8 +9,13 @@ Timeout:
   preconditions:
     files:
       favoritecolor.py: |
-        import sys
         import time
+        import sys
+        import os
+
+        # Write out pid of this process so we can check if it is still alive
+        with open("favoritecolor.pid", "w") as handle:
+            handle.write(str(os.getpid()))
 
         prompt = raw_input if sys.version_info.major == 2 else input
 
@@ -41,3 +46,6 @@ Timeout:
     - Raises Exception:
         exception type: icommandlib.exceptions.IProcessTimeout
         message: Timed out after 0.5 seconds.
+    - Processes not alive:
+        from filenames:
+        - favoritecolor.pid

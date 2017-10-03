@@ -35,6 +35,10 @@ class IProcess(object):
         if isinstance(response, message.ExceptionMessage):
             raise response.value
         if isinstance(response, message.TimeoutMessage):
+            
+            for descendant in self.psutil.children(recursive=True):
+                  descendant.kill()
+            self.psutil.kill()
             raise exceptions.IProcessTimeout(
                 "Timed out after {0} seconds.".format(response.value)
             )
