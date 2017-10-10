@@ -64,14 +64,29 @@ class Engine(BaseEngine):
                 self.pip("install", ".").in_dir(self.path.project).run()
 
         self.example_py_code = ExamplePythonCode(
-            self.preconditions.get('code', '')
+            self.python, self.path.state,
         ).with_setup_code(
             self.preconditions.get('setup', '')
+        ).with_code(
+            self.preconditions.get('code', '')
         )
 
     @expected_exception(HitchRunPyException)
     def run_code(self):
-        self.result = self.example_py_code.run(self.path.state, self.python)
+        self.result = self.example_py_code.run()
+    
+
+    @expected_exception(HitchRunPyException)
+    def start_code(self):
+        self.running_python = self.example_py_code.running_code()
+    
+    def pause_for_half_a_second(self):
+        import time
+        time.sleep(0.5)
+    
+    def send_sigterm_signal_and_wait_for_finish(self):
+        self.running_python.iprocess.psutil.terminate()
+        self.running_python.iprocess.wait_for_finish()
 
     @expected_exception(HitchRunPyException)
     @validate(
@@ -99,7 +114,7 @@ class Engine(BaseEngine):
                     else message['in python 3']
 
         try:
-            result = self.example_py_code.expect_exceptions().run(self.path.state, self.python)
+            result = self.example_py_code.expect_exceptions().run()
             result.exception_was_raised(exception_type, message)
         except ExpectedExceptionMessageWasDifferent as error:
             if self.settings.get("rewrite") and not differential:

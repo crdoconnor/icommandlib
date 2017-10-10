@@ -1,4 +1,6 @@
 from icommandlib import messages as message
+import signal
+import psutil
 import queue
 import pyte
 import pyuv
@@ -54,6 +56,9 @@ class IProcessHandle(object):
 
             self.tty = pyuv.TTY(self.loop, self.master_fd, True)
             self.tty.start_read(self.on_tty_read)
+            
+            self.signal_handle = pyuv.Signal(self.loop)
+            self.signal_handle.start(self.signal_callback, signal.SIGTERM)
 
             self.process = pyuv.Process.spawn(
                 self.loop,
@@ -102,6 +107,26 @@ class IProcessHandle(object):
         IProcess to indicate a message waiting on the request queue.
         """
         self.check()
+    
+    def signal_callback(self, handle, signum):
+        """
+        Callback that is triggered by the parent process receiving
+        a sigterm.
+        """
+        if signum == signal.SIGTERM:
+            proc = psutil.Process(self.process.pid)
+            for descendant in proc.children(recursive=True):
+                  descendant.kill()
+            proc.kill()
+        self.check()
+        self.close_handles()
+        self.response_queue.put(
+            message.ExitMessage(message.FinishedProcess(
+                None,
+                9,
+                '\n'.join(self.screen.display),
+            ))
+        )
 
     def timeout_handler(self, timer_handle):
         """
@@ -199,3 +224,6 @@ class IProcessHandle(object):
         if not self.process.closed:
             self.process.close()
             self.process = None
+        if not self.signal_handle.closed:
+            self.signal_handle.close()
+            self.signal_handle = None
