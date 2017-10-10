@@ -90,7 +90,7 @@ class Engine(BaseEngine):
             if name.startswith('SIG') and '_' not in name
         }
         self.running_python.iprocess.psutil._send_signal(
-            SIGNAL_NAMES_TO_NUMBERS[signal_name]
+            int(SIGNAL_NAMES_TO_NUMBERS[signal_name])
         )
         self.running_python.iprocess.wait_for_finish()
 

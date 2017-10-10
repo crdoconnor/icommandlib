@@ -57,8 +57,10 @@ class IProcessHandle(object):
             self.tty = pyuv.TTY(self.loop, self.master_fd, True)
             self.tty.start_read(self.on_tty_read)
             
-            self.signal_handle = pyuv.Signal(self.loop)
-            self.signal_handle.start(self.signal_callback, signal.SIGTERM)
+            self.sigterm_handle = pyuv.Signal(self.loop)
+            self.sigterm_handle.start(self.sigterm_callback, signal.SIGTERM)
+            self.sigint_handle = pyuv.Signal(self.loop)
+            self.sigint_handle.start(self.sigint_callback, signal.SIGINT)
 
             self.process = pyuv.Process.spawn(
                 self.loop,
@@ -111,9 +113,9 @@ class IProcessHandle(object):
     def signal_callback(self, handle, signum):
         """
         Callback that is triggered by the parent process receiving
-        a sigterm.
+        a sigterm or sigint.
         """
-        if signum == signal.SIGTERM:
+        if signum in (signal.SIGTERM, signal.SIGINT):
             proc = psutil.Process(self.process.pid)
             for descendant in proc.children(recursive=True):
                   descendant.kill()
@@ -127,6 +129,12 @@ class IProcessHandle(object):
                 '\n'.join(self.screen.display),
             ))
         )
+    
+    def sigterm_callback(self, handle, signum):
+        self.signal_callback(handle, signum)
+        
+    def sigint_callback(self, handle, signum):
+        self.signal_callback(handle, signum)
 
     def timeout_handler(self, timer_handle):
         """
@@ -224,6 +232,9 @@ class IProcessHandle(object):
         if not self.process.closed:
             self.process.close()
             self.process = None
-        if not self.signal_handle.closed:
-            self.signal_handle.close()
-            self.signal_handle = None
+        if not self.sigint_handle.closed:
+            self.sigint_handle.close()
+            self.sigint_handle = None
+        if not self.sigterm_handle.closed:
+            self.sigterm_handle.close()
+            self.sigterm_handle = None

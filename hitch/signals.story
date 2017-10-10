@@ -51,3 +51,11 @@ Stop on signals:
       from filenames:
       - parent.pid
       - child.pid
+  
+  variations:
+    sigint:
+      default:
+        signal: SIGINT
+    sigterm:
+      default:
+        signal: SIGTERM
