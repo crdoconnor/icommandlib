@@ -41,10 +41,12 @@ SIGTERM:
       
     code: |
       ICommand(python("parent.py")).run().wait_for_successful_exit()
+  default:
+    signal: SIGTERM
   scenario:
   - Start code
   - Pause for half a second
-  - Send sigterm signal and wait for finish
+  - Send signal and wait for finish: (( signal ))
   - Processes not alive:
       from filenames:
       - parent.pid

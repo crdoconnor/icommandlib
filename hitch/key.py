@@ -9,6 +9,7 @@ from commandlib import python
 import hitchpython
 import strictyaml
 import hitchtest
+import signal
 
 
 class Engine(BaseEngine):
@@ -74,7 +75,6 @@ class Engine(BaseEngine):
     @expected_exception(HitchRunPyException)
     def run_code(self):
         self.result = self.example_py_code.run()
-    
 
     @expected_exception(HitchRunPyException)
     def start_code(self):
@@ -84,8 +84,14 @@ class Engine(BaseEngine):
         import time
         time.sleep(0.5)
     
-    def send_sigterm_signal_and_wait_for_finish(self):
-        self.running_python.iprocess.psutil.terminate()
+    def send_signal_and_wait_for_finish(self, signal_name):
+        SIGNAL_NAMES_TO_NUMBERS = {
+            name: getattr(signal, name) for name in dir(signal)
+            if name.startswith('SIG') and '_' not in name
+        }
+        self.running_python.iprocess.psutil._send_signal(
+            SIGNAL_NAMES_TO_NUMBERS[signal_name]
+        )
         self.running_python.iprocess.wait_for_finish()
 
     @expected_exception(HitchRunPyException)
