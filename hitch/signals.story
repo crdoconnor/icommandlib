@@ -1,4 +1,4 @@
-SIGTERM:
+Stop on signals:
   based on: icommandlib
   description: |
     When a SIGTERM is received, icommandlib should SIGKILL its
