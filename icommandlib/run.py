@@ -102,6 +102,9 @@ class IProcessHandle(object):
             self.close_handles()
             self.response_queue.put(message.ExceptionMessage(error))
 
+    def screenshot(self):
+        return u"\n".join(line for line in self.screen.display)
+
     def on_thread_callback(self, async_handle):
         """
         This is the callback that is triggered when self.async.send()
@@ -143,7 +146,7 @@ class IProcessHandle(object):
         The timer is reset every time a condition is met.
         """
         self.close_handles()
-        self.response_queue.put(message.TimeoutMessage(self.timeout))
+        self.response_queue.put(message.TimeoutMessage(self.timeout, self.screenshot())), 
 
     def on_exit(self, proc, exit_status, term_signal):
         """
@@ -189,32 +192,36 @@ class IProcessHandle(object):
                 if isinstance(self.task, message.KeyPresses):
                     os.write(self.master_fd, self.task.value)
                     self.task = None
-                if isinstance(self.task, message.Condition):
+                elif isinstance(self.task, message.Condition):
+                    self.reset_timeout(self.task.timeout)
                     iscreen = IScreen(self.screen, self.raw_byte_output)
 
-                    if self.task.value(iscreen):
-                        self.reset_timeout()
+                    if self.task.condition_function(iscreen):
                         self.response_queue.put(message.OutputMatched())
                         self.task = None
-                if isinstance(self.task, message.TakeScreenshot):
+                elif isinstance(self.task, message.TakeScreenshot):
                     self.response_queue.put(message.Screenshot(
-                        "\n".join(line for line in self.screen.display)
+                        self.screenshot()
                     ))
                     self.task = None
+                    
         except Exception as error:
             self.close_handles()
             self.response_queue.put(message.ExceptionMessage(error))
 
-    def reset_timeout(self):
+    def reset_timeout(self, timeout=None):
         """
-        Clears the timeout handle and sets a new one.
+        Clears the timeout handle if it's there and sets a new one
+        if timeout is set.
         """
-        if self.timeout is not None:
-            if self.timeout_handle is not None:
-                self.timeout_handle.close()
-                self.timeout_handle = None
+        self.timeout = None
+        if self.timeout_handle is not None:
+            self.timeout_handle.close()
+            self.timeout_handle = None
+        if timeout is not None:
+            self.timeout = timeout
             self.timeout_handle = pyuv.Timer(self.loop)
-            self.timeout_handle.start(self.timeout_handler, self.timeout, 0)
+            self.timeout_handle.start(self.timeout_handler, timeout, 0)
 
     def close_handles(self):
         """

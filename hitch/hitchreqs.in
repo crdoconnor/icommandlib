@@ -1,11 +1,12 @@
 hitchpython
-hitchstory
-hitchrunpy
+hitchstory>=0.7.4
+hitchrunpy>=0.5.0
 hitchrun
 hitchdoc
 templex
 flake8
 jupyter_console
+strictyaml>=0.10.0
 twine
 simex
 q

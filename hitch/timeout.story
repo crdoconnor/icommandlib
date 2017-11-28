@@ -6,7 +6,7 @@ Timeout:
 
     By default every condition waited for follows
     a timeout.
-  preconditions:
+  given:
     files:
       favoritecolor.py: |
         import time
@@ -35,17 +35,23 @@ Timeout:
       from icommandlib import ICommand
       from commandlib import python
 
-      process = ICommand(python("favoritecolor.py")).with_timeout(0.5).run()
+      process = ICommand(python("favoritecolor.py")).run()
     code: |
-      process.wait_until_output_contains("favorite color:")
+      process.wait_until_output_contains("favorite color:", timeout=0.5)
       process.send_keys("blue\n")
-      process.wait_until_output_contains("favorite film:")
+      process.wait_until_output_contains("favorite film:", timeout=0.5)
       process.send_keys("usual suspects\n")
-      process.wait_until_output_contains("favorite country:")
-  scenario:
+      process.wait_until_output_contains("favorite country:", timeout=0.5)
+  steps:
     - Raises Exception:
         exception type: icommandlib.exceptions.IProcessTimeout
-        message: Timed out after 0.5 seconds.
+        message: |-
+          Timed out after 0.5 seconds:
+          
+          favorite color:blue
+          blue
+          favorite film:usual suspects
+          usual suspects
     - Processes not alive:
-        from filenames:
+        from_filenames:
         - favoritecolor.pid

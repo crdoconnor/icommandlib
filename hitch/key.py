@@ -1,7 +1,7 @@
 from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
 from hitchstory import expected_exception
 from hitchrun import expected, DIR
-from commandlib import Command
+from commandlib import Command, CommandError
 from pathquery import pathq
 from strictyaml import MapPattern, Map, Str, Float, Optional, Seq
 from hitchrunpy import HitchRunPyException, ExamplePythonCode, ExpectedExceptionMessageWasDifferent
@@ -14,7 +14,7 @@ import signal
 
 class Engine(BaseEngine):
     schema = StorySchema(
-        preconditions={
+        given={
             Optional("files"): MapPattern(Str(), Str()),
             Optional("variables"): MapPattern(Str(), Str()),
             Optional("python version"): Str(),
@@ -33,13 +33,13 @@ class Engine(BaseEngine):
             self.path.state.rmtree(ignore_errors=True)
         self.path.state.mkdir()
 
-        for filename, text in self.preconditions.get("files", {}).items():
+        for filename, text in self.given.get("files", {}).items():
             filepath = self.path.state.joinpath(filename)
             if not filepath.dirname().exists():
                 filepath.dirname().mkdir()
             filepath.write_text(str(text))
 
-        for filename, text in self.preconditions.get("variables", {}).items():
+        for filename, text in self.given.get("variables", {}).items():
             filepath = self.path.state.joinpath(filename)
             if not filepath.dirname().exists():
                 filepath.dirname().mkdir()
@@ -48,7 +48,7 @@ class Engine(BaseEngine):
         self.path.key.joinpath("code_that_does_things.py").copy(self.path.state)
 
         self.python_package = hitchpython.PythonPackage(
-            self.preconditions.get('python_version', self.preconditions['python version'])
+            self.given.get('python_version', self.given['python version'])
         )
         self.python_package.build()
 
@@ -67,10 +67,10 @@ class Engine(BaseEngine):
         self.example_py_code = ExamplePythonCode(
             self.python, self.path.state,
         ).with_setup_code(
-            self.preconditions.get('setup', '')
+            self.given.get('setup', '')
         ).with_code(
-            self.preconditions.get('code', '')
-        )
+            self.given.get('code', '')
+        ).with_timeout(4.0)
 
     @expected_exception(HitchRunPyException)
     def run_code(self):
@@ -109,14 +109,14 @@ class Engine(BaseEngine):
             if not isinstance(exception_type, str):
                 differential = True
                 exception_type = exception_type['in python 2']\
-                    if self.preconditions['python version'].startswith("2")\
+                    if self.given['python version'].startswith("2")\
                     else exception_type['in python 3']
 
         if message is not None:
             if not isinstance(message, str):
                 differential = True
                 message = message['in python 2']\
-                    if self.preconditions['python version'].startswith("2")\
+                    if self.given['python version'].startswith("2")\
                     else message['in python 3']
 
         try:
@@ -258,6 +258,22 @@ def deploy(version):
     python(
         "-m", "twine", "upload", "dist/{0}-{1}.tar.gz".format(NAME, version)
     ).in_dir(DIR.project).run()
+
+
+@expected(CommandError)
+def doctest(version="3.5.0"):
+    Command(DIR.gen.joinpath("py{0}".format(version), "bin", "python"))(
+        "-m", "doctest", "-v", DIR.project.joinpath("icommandlib", "utils.py")
+    ).in_dir(DIR.project.joinpath("icommandlib")).run()
+
+
+def rerun(version="3.5.0"):
+    """
+    Rerun last example code block with specified version of python.
+    """
+    Command(DIR.gen.joinpath("py{0}".format(version), "bin", "python"))(
+        DIR.gen.joinpath("state", "examplepythoncode.py")
+    ).in_dir(DIR.gen.joinpath("state")).run()
 
 
 def lint():

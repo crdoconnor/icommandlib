@@ -9,7 +9,7 @@ Prompts:
     Interacting with this requires waiting for the message
     to appear, mimicking typing, waiting again and typing
     again.
-  preconditions:
+  given:
     files:
       favoritecolor.py: |
         import sys
@@ -40,7 +40,7 @@ Prompts:
       process.send_keys("the usual suspects\n")
       process.wait_until_on_screen("favorite color")
       process.wait_for_finish()
-  scenario:
+  steps:
     - Run code
     - File contents will be:
         filename: color.txt

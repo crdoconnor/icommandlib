@@ -7,7 +7,7 @@ Custom Screen Condition:
     This is useful when you are waiting for something
     to appear on screen that you cannot check just
     by looking for a block of text.
-  preconditions:
+  given:
     files:
       favoritecolor.py: |
         import sys
@@ -20,7 +20,7 @@ Custom Screen Condition:
 
         sys.exit(0)
     setup: |
-      from code_that_does_things import *
+      from code_that_does_things import raise_example_exception
       from icommandlib import ICommand
       from commandlib import python
 
@@ -30,25 +30,25 @@ Custom Screen Condition:
       def check_with_error(screen):
           raise_example_exception()
           
-      process = ICommand(python("favoritecolor.py")).with_timeout(0.5).run()
+      process = ICommand(python("favoritecolor.py")).run()
   variations:
     Check for favorite color:
-      preconditions:
+      given:
         code: |
           process.wait_until(check_for_favorite_color)
           process.send_keys("blue\n")
           process.wait_for_finish()
-      scenario:
+      steps:
       - Run code
       - File contents will be:
           filename: color.txt
           text: blue
 
     Check with error:
-      preconditions:
+      given:
         code: |
           process.wait_until(check_with_error)
-      scenario:
+      steps:
       - Raises exception:
           exception type: code_that_does_things.ExampleException
           message:

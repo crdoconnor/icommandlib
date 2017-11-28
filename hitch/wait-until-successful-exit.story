@@ -1,8 +1,8 @@
 Wait until successful exit:
   based on: icommandlib
   description: |
-    Wa
-  preconditions:
+    Wait until exit with status code 0.
+  given:
     files:
       successful_exit.py: |
         import sys
@@ -18,7 +18,7 @@ Wait until successful exit:
       from commandlib import python
   variations:
     Without errors:
-      preconditions:
+      given:
         code: |
           finished_process = ICommand(python("successful_exit.py")).run().wait_for_successful_exit()
 
@@ -26,17 +26,17 @@ Wait until successful exit:
               handle.write(finished_process.screenshot)
           
           assert finished_process.exit_code == 0
-      scenario:
+      steps:
         - Run code
         - File contents will be:
             filename: finalscreenshot.txt
             reference: finalscreenshot
 
     Unsuccessful exit:
-      preconditions:
+      given:
         code: |
           finished_process = ICommand(python("unsuccessful_exit.py")).run().wait_for_successful_exit()
-      scenario:
+      steps:
         - Raises exception:
             exception type: icommandlib.exceptions.ExitWithError
             message: |-

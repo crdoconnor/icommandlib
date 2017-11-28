@@ -1,4 +1,10 @@
+"""
+These are messages passed either to or from the main thread
+to the handler thread along the response or request queue.
 
+Main thread -> Request Queue -> Handler Thread
+Handler Thread -> Response Queue -> Main Thread
+"""
 
 class Message(object):
     def __init__(self, value):
@@ -47,7 +53,9 @@ class ProcessStartedMessage(Message):
 
 
 class Condition(Message):
-    pass
+    def __init__(self, condition_function, timeout):
+        self.condition_function = condition_function
+        self.timeout = timeout
 
 
 class OutputMatched(Message):
@@ -56,7 +64,9 @@ class OutputMatched(Message):
 
 
 class TimeoutMessage(Message):
-    pass
+    def __init__(self, after, screenshot):
+        self.after = after
+        self.screenshot = screenshot
 
 
 class KeyPresses(Message):
@@ -69,4 +79,8 @@ class TakeScreenshot(Message):
 
 
 class Screenshot(Message):
+    pass
+
+
+class StartTimeout(Message):
     pass

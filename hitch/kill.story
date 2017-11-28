@@ -8,7 +8,7 @@ Kill:
     
     For processes that start child processes this means that their child processes
     and their child processes are killed.
-  preconditions:
+  given:
     files:
       child.py: |
         import os
@@ -45,9 +45,9 @@ Kill:
       process = ICommand(python("parent.py")).run()
       time.sleep(0.5)
       process.kill()
-  scenario:
+  steps:
     - Run code
     - Processes not alive:
-        from filenames:
+        from_filenames:
         - parent.pid
         - child.pid

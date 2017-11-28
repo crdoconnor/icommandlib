@@ -3,7 +3,7 @@ Stop on signals:
   description: |
     When a SIGTERM is received, icommandlib should SIGKILL its
     process and subprocesses.
-  preconditions:
+  given:
     files:
       child.py: |
         import os
@@ -41,21 +41,21 @@ Stop on signals:
       
     code: |
       ICommand(python("parent.py")).run().wait_for_successful_exit()
-  default:
+  with:
     signal: SIGTERM
-  scenario:
+  steps:
   - Start code
   - Pause for half a second
   - Send signal and wait for finish: (( signal ))
   - Processes not alive:
-      from filenames:
+      from_filenames:
       - parent.pid
       - child.pid
   
   variations:
     sigint:
-      default:
+      with:
         signal: SIGINT
     sigterm:
-      default:
+      with:
         signal: SIGTERM

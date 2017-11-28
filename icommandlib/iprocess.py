@@ -1,5 +1,6 @@
 from icommandlib import messages as message
 from icommandlib.run import IProcessHandle
+from icommandlib.utils import stripshot
 from icommandlib import exceptions
 import threading
 import psutil
@@ -40,7 +41,10 @@ class IProcess(object):
                   descendant.kill()
             self.psutil.kill()
             raise exceptions.IProcessTimeout(
-                "Timed out after {0} seconds.".format(response.value)
+                "Timed out after {0} seconds:\n\n{1}".format(
+                    response.after,
+                    stripshot(response.screenshot),
+                )
             )
         if isinstance(response, message.ExitMessage):
             if of_kind != message.ExitMessage:
@@ -68,30 +72,34 @@ class IProcess(object):
     def psutil(self):
         return psutil.Process(self._pid)
 
-    def wait_until(self, condition_function):
+    def wait_until(self, condition_function, timeout=None):
         self._request_queue.put(message.Condition(
-            condition_function
+            condition_function, timeout
         ))
         self._async_send()
         self._expect_message(message.OutputMatched)
 
-    def wait_until_output_contains(self, text):
+    def wait_until_output_contains(self, text, timeout=None):
         """
         Wait until the totality of the output of the process contains
         at least one instance of 'text'.
         """
         self.wait_until(
-            lambda iscreen: text in iscreen.raw_bytes.decode('utf8')
+            lambda iscreen: text in iscreen.raw_bytes.decode('utf8'),
+            timeout
         )
 
-    def wait_until_on_screen(self, text):
+    def wait_until_on_screen(self, text, timeout=None):
         """
         Waits until the text specified appears on the process's terminal
         screen.
         """
-        self.wait_until(
-            lambda iscreen: len([line for line in iscreen.display if text in line]) > 0
-        )
+        def on_screen(iscreen):
+            return len([
+                line for line in iscreen.display if text in line
+            ]) > 0
+
+        self.wait_until(on_screen, timeout)
 
     def send_keys(self, text):
         """
@@ -126,7 +134,7 @@ class IProcess(object):
         if response.exit_code != 0:
             raise exceptions.ExitWithError(
                 response.exit_code,
-                response.screenshot.rstrip(),
+                stripshot(response.screenshot),
             )
         
         return response

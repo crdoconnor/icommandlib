@@ -8,7 +8,7 @@ Screenshot:
     When the program finishes, it automatically takes
     a screenshot of the final state of the screen which
     is available in .final_screenshot.
-  preconditions:
+  given:
     files:
       favoritecolor.py: |
         import sys
@@ -32,7 +32,7 @@ Screenshot:
           handle.write(process.screenshot())
 
       process.wait_for_finish()
-  scenario:
+  steps:
     - Run code
     - File contents will be:
         filename: screenshot.txt

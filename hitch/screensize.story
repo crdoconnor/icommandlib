@@ -2,7 +2,7 @@ Screensize:
   based on: icommandlib
   description: |
     You can run an interactive command in a screensize of your choice.
-  preconditions:
+  given:
     files:
       favoritecolor.py: |
         import sys
@@ -29,7 +29,7 @@ Screensize:
 
         process.wait_for_finish()
 
-  scenario:
+  steps:
     - Run code
     - File contents will be:
         reference: resized screenshot

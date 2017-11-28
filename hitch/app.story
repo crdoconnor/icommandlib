@@ -1,5 +1,5 @@
 icommandlib:
-  preconditions:
+  given:
     python version: (( python version ))
-  default:
+  with:
     python version: 3.5.0

@@ -3,7 +3,7 @@ Unexpected exit:
   description: |
     While waiting for a condition to occur, a command may exit
     unexpectedly. This will raise an UnexpectedExit exception.
-  preconditions:
+  given:
     files:
       exitunexpectedly.py: |
         import sys
@@ -17,7 +17,7 @@ Unexpected exit:
     code: |
       process = ICommand(python("exitunexpectedly.py")).run()
       process.wait_until_output_contains("some message that will never appear")
-  scenario:
+  steps:
     - Raises exception:
         exception type: icommandlib.exceptions.UnexpectedExit
         message: |-
