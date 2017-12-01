@@ -2,8 +2,8 @@
 These are messages passed either to or from the main thread
 to the handler thread along the response or request queue.
 
-Main thread -> Request Queue -> Handler Thread
-Handler Thread -> Response Queue -> Main Thread
+Master thread -> Request Queue -> Handle Thread
+Handle thread -> Response Queue -> Master Thread
 """
 
 class Message(object):

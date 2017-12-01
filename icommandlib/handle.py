@@ -23,7 +23,7 @@ class IScreen(object):
 
     @property
     def text(self):
-        return '\n'.join(self.display)
+        return u'\n'.join(self.display)
 
 
 class IProcessHandle(object):

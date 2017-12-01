@@ -1,5 +1,5 @@
 from icommandlib import messages as message
-from icommandlib.run import IProcessHandle
+from icommandlib.handle import IProcessHandle
 from icommandlib.utils import stripshot
 from icommandlib import exceptions
 import threading
