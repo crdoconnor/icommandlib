@@ -123,7 +123,7 @@ class Engine(BaseEngine):
             result = self.example_py_code.expect_exceptions().run()
             result.exception_was_raised(exception_type, message)
         except ExpectedExceptionMessageWasDifferent as error:
-            if self.settings.get("rewrite") and not differential:
+            if self.settings.get("overwrite artefacts") and not differential:
                 self.current_step.update(message=error.actual_message)
             else:
                 raise
@@ -198,6 +198,10 @@ class Engine(BaseEngine):
     def sleep(self, seconds):
         import time
         time.sleep(float(seconds))
+    
+    def on_success(self):
+        if self.settings.get("overwrite artefacts"):
+            self.new_story.save()
 
 
 @expected(strictyaml.exceptions.YAMLValidationError)

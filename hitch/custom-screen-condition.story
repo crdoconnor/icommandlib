@@ -3,7 +3,7 @@ Custom Screen Condition:
   description: |
     In this example, customized functions are used
     to detect various screen terminal conditions.
-    
+
     This is useful when you are waiting for something
     to appear on screen that you cannot check just
     by looking for a block of text.
@@ -51,4 +51,17 @@ Custom Screen Condition:
       steps:
       - Raises exception:
           exception type: code_that_does_things.ExampleException
-          message:
+
+    Wait until when program finished:
+      given:
+        code: |
+          process.wait_until(check_for_favorite_color)
+          process.send_keys("blue\n")
+          process.wait_for_finish()
+          process.wait_until(check_for_favorite_color)
+      steps:
+      - Raises exception:
+          exception type: icommandlib.exceptions.AlreadyExited
+          message: |-
+            Process already exited with '0'. Output:
+            favorite color:blue

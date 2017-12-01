@@ -1,3 +1,6 @@
+from icommandlib.utils import stripshot
+
+
 class ICommandError(Exception):
     pass
 
@@ -10,14 +13,24 @@ class UnexpectedExit(ICommandError):
     pass
 
 
-class ExitWithError(ICommandError):
+class IProcessExitError(ICommandError):
+    MESSAGE = u"Process had non-zero exit code '{exit_code}'. Output:\n{screenshot}"
+
     def __init__(self, exit_code, screenshot):
         self.exit_code = exit_code
         self.screenshot = screenshot
-    
-        super(ExitWithError, self).__init__((
-            u"Process had non-zero exit code '{0}'. Output:\n{1}"
-        ).format(
-            self.exit_code,
-            self.screenshot,
-        ))
+
+        super(IProcessExitError, self).__init__(
+            self.MESSAGE.format(
+                exit_code=self.exit_code,
+                screenshot=stripshot(self.screenshot)
+            )
+        )
+
+
+class AlreadyExited(IProcessExitError):
+    MESSAGE = u"Process already exited with '{exit_code}'. Output:\n{screenshot}"
+
+
+class ExitWithError(IProcessExitError):
+    pass

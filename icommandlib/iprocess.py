@@ -30,9 +30,18 @@ class IProcess(object):
         self._async_send = self._expect_message(message.AsyncSendMethodMessage)
         
         self.final_screenshot = None
+        self._running = True
 
-    def _expect_message(self, of_kind):
-        response = self._response_queue.get()
+    def _check_messages(self):
+        try:
+            response = self._response_queue.get(block=False)
+        except queue.Empty:
+            response = None
+        
+        if response is not None:
+            return self._deal_with_message(response)
+            
+    def _deal_with_message(self, response, of_kind=None):
         if isinstance(response, message.ExceptionMessage):
             raise response.value
         if isinstance(response, message.TimeoutMessage):
@@ -47,6 +56,7 @@ class IProcess(object):
                 )
             )
         if isinstance(response, message.ExitMessage):
+            self._running = False
             if of_kind != message.ExitMessage:
                 raise exceptions.UnexpectedExit(
                     "\n\n{0}\n\nProcess unexpectedly exited with exit_code {1}".format(
@@ -55,6 +65,7 @@ class IProcess(object):
                     )
                 )
             else:
+                self._exit_code = response.value.exit_code
                 self.final_screenshot = response.value.screenshot
         if not isinstance(response, of_kind):
             raise Exception(
@@ -63,21 +74,35 @@ class IProcess(object):
                 )
             )
         return response.value
+
+    def _expect_message(self, of_kind):
+        response = self._response_queue.get()
+        return self._deal_with_message(response, of_kind=of_kind)
     
     @property
     def pid(self):
         return self._pid
-    
+
+    @property
+    def running(self):
+        return self._running
+
     @property
     def psutil(self):
         return psutil.Process(self._pid)
 
     def wait_until(self, condition_function, timeout=None):
-        self._request_queue.put(message.Condition(
-            condition_function, timeout
-        ))
-        self._async_send()
-        self._expect_message(message.OutputMatched)
+        if self._running:
+            self._request_queue.put(message.Condition(
+                condition_function, timeout
+            ))
+            self._async_send()
+            self._expect_message(message.OutputMatched)
+        else:
+            raise exceptions.AlreadyExited(
+                self._exit_code,
+                self.final_screenshot,
+            )
 
     def wait_until_output_contains(self, text, timeout=None):
         """
@@ -139,8 +164,14 @@ class IProcess(object):
         
         return response
 
-    def kill(self):
-        for descendant in self.psutil.children(recursive=True):
-              descendant.kill()
-        self.psutil.kill()
-        self.wait_for_finish()
+    def kill(self): 
+        if self._running:
+            self._check_messages()
+            self._request_queue.put(message.KillProcess())
+            self._async_send()
+            self._expect_message(message.ProcessKilled)
+        else:
+            raise exceptions.AlreadyExited(
+                self._exit_code,
+                self.final_screenshot,
+            )

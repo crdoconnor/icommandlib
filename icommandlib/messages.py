@@ -84,3 +84,13 @@ class Screenshot(Message):
 
 class StartTimeout(Message):
     pass
+
+
+class KillProcess(Message):
+    def __init__(self):
+        self._value = None
+
+
+class ProcessKilled(Message):
+    def __init__(self):
+        self._value = None

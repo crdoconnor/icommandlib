@@ -53,5 +53,5 @@ Timeout:
           favorite film:usual suspects
           usual suspects
     - Processes not alive:
-        from_filenames:
+        from filenames:
         - favoritecolor.pid

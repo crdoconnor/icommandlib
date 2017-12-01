@@ -85,9 +85,11 @@ class IProcessHandle(object):
                 flags=pyuv.UV_PROCESS_DETACHED,
             )
 
+            self._pid = self.process.pid
+
             self.response_queue.put(
                 message.ProcessStartedMessage(message.RunningProcess(
-                    self.process.pid, self.master_fd
+                    self._pid, self.master_fd
                 ))
             )
 
@@ -105,11 +107,17 @@ class IProcessHandle(object):
     def screenshot(self):
         return u"\n".join(line for line in self.screen.display)
 
+    @property
+    def psutil(self):
+        return psutil.Process(self._pid)
+  
     def on_thread_callback(self, async_handle):
         """
         This is the callback that is triggered when self.async.send()
-        (the only threadsafe method on this class) is called from
-        IProcess to indicate a message waiting on the request queue.
+        (the only threadsafe method on this class) is called.
+        
+        It is used to indicate that there's a message waiting on
+        self._request_queue to pick up.
         """
         self.check()
     
@@ -189,6 +197,12 @@ class IProcessHandle(object):
                     self.task = None
 
             if self.task is not None:
+                if isinstance(self.task, message.KillProcess):
+                    for descendant in self.psutil.children(recursive=True):
+                          descendant.kill()
+                    self.psutil.kill()
+                    self.close_handles()
+                    self.response_queue.put(message.ProcessKilled())
                 if isinstance(self.task, message.KeyPresses):
                     os.write(self.master_fd, self.task.value)
                     self.task = None
