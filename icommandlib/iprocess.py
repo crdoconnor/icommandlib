@@ -29,7 +29,7 @@ class IProcess(object):
         self._master_fd = self._running_process._stdin
         self._async_send = self._expect_message(message.AsyncSendMethodMessage)
         
-        self.final_screenshot = None
+        self._final_screenshot = None
         self._running = True
 
     def _check_messages(self):
@@ -66,7 +66,7 @@ class IProcess(object):
                 )
             else:
                 self._exit_code = response.value.exit_code
-                self.final_screenshot = response.value.screenshot
+                self._final_screenshot = response.value.screenshot
         if not isinstance(response, of_kind):
             raise Exception(
                 "Threading error expected {0} got {1}".format(
@@ -93,6 +93,7 @@ class IProcess(object):
 
     def wait_until(self, condition_function, timeout=None):
         if self._running:
+            self._check_messages()
             self._request_queue.put(message.Condition(
                 condition_function, timeout
             ))
@@ -101,7 +102,7 @@ class IProcess(object):
         else:
             raise exceptions.AlreadyExited(
                 self._exit_code,
-                self.final_screenshot,
+                self._final_screenshot,
             )
 
     def wait_until_output_contains(self, text, timeout=None):
@@ -130,21 +131,35 @@ class IProcess(object):
         """
         Send keys to the terminal process.
         """
+        # FIXME: CHECK MESSAGES AND STORY
         self._request_queue.put(message.KeyPresses(text.encode('utf8')))
         self._async_send()
 
     def screenshot(self):
         """
-        Get a screenshot of the terminal window of the running process.
+        Get a 'screenshot' of the terminal window of a running or finished
+        process.
+        
+        Use stripshot() to clean the whitespace from the right and bottom.
         """
-        self._request_queue.put(message.TakeScreenshot())
-        self._async_send()
-        return self._expect_message(message.Screenshot)
+        if self._final_screenshot is not None:
+            return self._final_screenshot
+        else:
+            self._request_queue.put(message.TakeScreenshot())
+            self._async_send()
+            return self._expect_message(message.Screenshot)
+    
+    def stripshot(self):
+        """
+        Get a stripped screenshot of the terminal window of the running process.
+        
+        i.e. all of the whitepace to the right and bottom will be cut.
+        """
+        return stripshot(self.screenshot())
 
     def wait_for_finish(self):
         """
-        Wait until the process has closed. Raises exception if
-        the process is still open after timeout.
+        Wait until the process has finished.
         """
         self._expect_message(message.ExitMessage)
     
@@ -165,13 +180,7 @@ class IProcess(object):
         return response
 
     def kill(self): 
-        if self._running:
-            self._check_messages()
-            self._request_queue.put(message.KillProcess())
-            self._async_send()
-            self._expect_message(message.ProcessKilled)
-        else:
-            raise exceptions.AlreadyExited(
-                self._exit_code,
-                self.final_screenshot,
-            )
+        self._check_messages()
+        self._request_queue.put(message.KillProcess())
+        self._async_send()
+        self._expect_message(message.ProcessKilled)
