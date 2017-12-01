@@ -224,7 +224,7 @@ def regression():
     print(
         StoryCollection(
             pathq(DIR.key).ext("story"), Engine(DIR, {})
-        ).ordered_by_name().play().report()
+        ).only_uninherited().ordered_by_name().play().report()
     )
 
 
