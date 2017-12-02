@@ -33,11 +33,10 @@ class IProcessHandle(object):
     The IProcessHandle operates in its own thread which operates upon
     the following events:
 
-    * The process ending of its own accord.
-    * The process spitting out a chunk of output (which is fed into
-    a virtual terminal).
-    * A timer (used for timing out other events).
-    * Messages from the process thread.
+    * The process exiting of its own accord.
+    * Orders from the master thread.
+    * A timer (used for timing out waits).
+    * Chunks of output spat out at the terminal (fed into virtual terminal).
     """
     def __init__(self, icommand, request_queue, response_queue):
         try:
@@ -54,8 +53,8 @@ class IProcessHandle(object):
 
             self.loop = pyuv.Loop.default_loop()
 
-            self.tty = pyuv.TTY(self.loop, self.master_fd, True)
-            self.tty.start_read(self.on_tty_read)
+            self.tty_handle = pyuv.TTY(self.loop, self.master_fd, True)
+            self.tty_handle.start_read(self.on_tty_read)
             
             self.sigterm_handle = pyuv.Signal(self.loop)
             self.sigterm_handle.start(self.sigterm_callback, signal.SIGTERM)
@@ -93,8 +92,8 @@ class IProcessHandle(object):
                 ))
             )
 
-            self.async = pyuv.Async(self.loop, self.on_thread_callback)
-            self.response_queue.put(message.AsyncSendMethodMessage(self.async.send))
+            self.async_handle = pyuv.Async(self.loop, self.on_thread_callback)
+            self.response_queue.put(message.AsyncSendMethodMessage(self.async_handle.send))
 
             self.timeout_handle = None
             self.reset_timeout()
@@ -244,12 +243,12 @@ class IProcessHandle(object):
         if self.timeout_handle is not None and not self.timeout_handle.closed:
             self.timeout_handle.close()
             self.timeout_handle = None
-        if not self.tty.closed:
-            self.tty.close()
-            self.tty = None
-        if not self.async.closed:
-            self.async.close()
-            self.async = None
+        if not self.tty_handle.closed:
+            self.tty_handle.close()
+            self.tty_handle = None
+        if not self.async_handle.closed:
+            self.async_handle.close()
+            self.async_handle = None
         if not self.process.closed:
             self.process.close()
             self.process = None
