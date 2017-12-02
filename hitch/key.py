@@ -208,7 +208,7 @@ class Engine(BaseEngine):
 @expected(exceptions.HitchStoryException)
 def tdd(*words):
     """
-    Run test with words.
+    Run story in TDD mode that matches keywords (e.g. tdd wait finished)
     """
     print(
         StoryCollection(

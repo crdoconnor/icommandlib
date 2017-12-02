@@ -1,13 +1,8 @@
 Screenshot:
   based on: icommandlib
   description: |
-    At any point during program execution, you should
-    be able to take a screenshot of what appears on its
-    virtual terminal.
-    
-    When the program finishes, it automatically takes
-    a screenshot of the final state of the screen which
-    is available in .final_screenshot.
+    At any point during or after program execution, you can
+    take a screenshot of what appears on its virtual terminal.
   given:
     files:
       favoritecolor.py: |
