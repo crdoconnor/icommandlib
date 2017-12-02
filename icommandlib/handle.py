@@ -38,9 +38,9 @@ class IProcessHandle(object):
     * A timer (used for timing out waits).
     * Chunks of output spat out at the terminal (fed into virtual terminal).
     """
-    def __init__(self, icommand, request_queue, response_queue):
+    def __init__(self, icommand, order_queue, response_queue):
         try:
-            self.request_queue = request_queue       # Messages from master thread
+            self.order_queue = order_queue       # Messages from master thread
             self.response_queue = response_queue     # Messages to master thread
 
             self.master_fd, self.slave_fd = pty.openpty()
@@ -116,7 +116,7 @@ class IProcessHandle(object):
         (the only threadsafe method on this class) is called.
         
         It is used to indicate that there's a message waiting on
-        self._request_queue to pick up.
+        self._order_queue to pick up.
         """
         self.check()
     
@@ -186,12 +186,12 @@ class IProcessHandle(object):
     def check(self):
         """
         Callback that is triggered when there is (probably) a message
-        waiting on the request queue.
+        waiting on the order queue.
         """
         try:
             if self.task is None:
                 try:
-                    self.task = self.request_queue.get(block=False)
+                    self.task = self.order_queue.get(block=False)
                 except queue.Empty:
                     self.task = None
 

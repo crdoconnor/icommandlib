@@ -15,19 +15,19 @@ class IProcess(object):
     """
     def __init__(self, icommand):
         self._icommand = icommand
-        self._request_queue = queue.Queue()
+        self._order_queue = queue.Queue()
         self._response_queue = queue.Queue()
         self._handle = threading.Thread(
             target=IProcessHandle,
-            args=(icommand, self._request_queue, self._response_queue)
+            args=(icommand, self._order_queue, self._response_queue)
         )
         self._handle.start()
 
-        self._running_process = self._expect_message(message.ProcessStartedMessage)
+        self._running_process = self._wait_for_message(message.ProcessStartedMessage)
 
         self._pid = self._running_process._pid
         self._master_fd = self._running_process._stdin
-        self._async_send = self._expect_message(message.AsyncSendMethodMessage)
+        self._async_send = self._wait_for_message(message.AsyncSendMethodMessage)
         
         self._final_screenshot = None
         self._running = True
@@ -75,7 +75,7 @@ class IProcess(object):
             )
         return response.value
 
-    def _expect_message(self, of_kind):
+    def _wait_for_message(self, of_kind):
         response = self._response_queue.get()
         return self._deal_with_message(response, of_kind=of_kind)
     
@@ -94,11 +94,11 @@ class IProcess(object):
     def wait_until(self, condition_function, timeout=None):
         if self._running:
             self._check_messages()
-            self._request_queue.put(message.Condition(
+            self._order_queue.put(message.Condition(
                 condition_function, timeout
             ))
             self._async_send()
-            self._expect_message(message.OutputMatched)
+            self._wait_for_message(message.OutputMatched)
         else:
             raise exceptions.AlreadyExited(
                 self._exit_code,
@@ -132,7 +132,7 @@ class IProcess(object):
         Send keys to the terminal process.
         """
         # FIXME: CHECK MESSAGES AND STORY
-        self._request_queue.put(message.KeyPresses(text.encode('utf8')))
+        self._order_queue.put(message.KeyPresses(text.encode('utf8')))
         self._async_send()
 
     def screenshot(self):
@@ -145,9 +145,9 @@ class IProcess(object):
         if self._final_screenshot is not None:
             return self._final_screenshot
         else:
-            self._request_queue.put(message.TakeScreenshot())
+            self._order_queue.put(message.TakeScreenshot())
             self._async_send()
-            return self._expect_message(message.Screenshot)
+            return self._wait_for_message(message.Screenshot)
     
     def stripshot(self):
         """
@@ -161,7 +161,7 @@ class IProcess(object):
         """
         Wait until the process has finished.
         """
-        self._expect_message(message.ExitMessage)
+        self._wait_for_message(message.ExitMessage)
     
     def wait_for_successful_exit(self):
         """
@@ -169,7 +169,7 @@ class IProcess(object):
         if the process is still open after timeout or it exits
         with an exit code other than 0.
         """
-        response = self._expect_message(message.ExitMessage)
+        response = self._wait_for_message(message.ExitMessage)
 
         if response.exit_code != 0:
             raise exceptions.ExitWithError(
@@ -181,6 +181,6 @@ class IProcess(object):
 
     def kill(self): 
         self._check_messages()
-        self._request_queue.put(message.KillProcess())
+        self._order_queue.put(message.KillProcess())
         self._async_send()
-        self._expect_message(message.ProcessKilled)
+        self._wait_for_message(message.ProcessKilled)
