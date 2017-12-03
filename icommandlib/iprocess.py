@@ -131,9 +131,15 @@ class IProcess(object):
         """
         Send keys to the terminal process.
         """
-        # FIXME: CHECK MESSAGES AND STORY
-        self._order_queue.put(message.KeyPresses(text.encode('utf8')))
-        self._async_send()
+        if self._running:
+            self._check_messages()
+            self._order_queue.put(message.KeyPresses(text.encode('utf8')))
+            self._async_send()
+        else:
+            raise exceptions.AlreadyExited(
+                self._exit_code,
+                self._final_screenshot,
+            )
 
     def screenshot(self):
         """
