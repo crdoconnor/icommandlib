@@ -6,6 +6,7 @@ Master thread -> Order Queue -> Handler Thread
 Handler thread -> Response Queue -> Master Thread
 """
 
+
 class Message(object):
     def __init__(self, value):
         self._value = value

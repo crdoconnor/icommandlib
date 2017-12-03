@@ -55,7 +55,7 @@ class IProcessHandle(object):
 
             self.tty_handle = pyuv.TTY(self.loop, self.master_fd, True)
             self.tty_handle.start_read(self.on_tty_read)
-            
+
             self.sigterm_handle = pyuv.Signal(self.loop)
             self.sigterm_handle.start(self.sigterm_callback, signal.SIGTERM)
             self.sigint_handle = pyuv.Signal(self.loop)
@@ -109,17 +109,17 @@ class IProcessHandle(object):
     @property
     def psutil(self):
         return psutil.Process(self._pid)
-  
+
     def on_thread_callback(self, async_handle):
         """
         This is the callback that is triggered when self.async.send()
         (the only threadsafe method on this class) is called.
-        
+
         It is used to indicate that there's a message waiting on
         self._order_queue to pick up.
         """
         self.check()
-    
+
     def signal_callback(self, handle, signum):
         """
         Callback that is triggered by the parent process receiving
@@ -128,7 +128,7 @@ class IProcessHandle(object):
         if signum in (signal.SIGTERM, signal.SIGINT):
             proc = psutil.Process(self.process.pid)
             for descendant in proc.children(recursive=True):
-                  descendant.kill()
+                descendant.kill()
             proc.kill()
         self.check()
         self.close_handles()
@@ -139,10 +139,10 @@ class IProcessHandle(object):
                 '\n'.join(self.screen.display),
             ))
         )
-    
+
     def sigterm_callback(self, handle, signum):
         self.signal_callback(handle, signum)
-        
+
     def sigint_callback(self, handle, signum):
         self.signal_callback(handle, signum)
 
@@ -153,7 +153,9 @@ class IProcessHandle(object):
         The timer is reset every time a condition is met.
         """
         self.close_handles()
-        self.response_queue.put(message.TimeoutMessage(self.timeout, self.screenshot())), 
+        self.response_queue.put(
+            message.TimeoutMessage(self.timeout, self.screenshot())
+        )
 
     def on_exit(self, proc, exit_status, term_signal):
         """
@@ -198,7 +200,7 @@ class IProcessHandle(object):
             if self.task is not None:
                 if isinstance(self.task, message.KillProcess):
                     for descendant in self.psutil.children(recursive=True):
-                          descendant.kill()
+                        descendant.kill()
                     self.psutil.kill()
                     self.close_handles()
                     self.response_queue.put(message.ProcessKilled())
@@ -217,7 +219,7 @@ class IProcessHandle(object):
                         self.screenshot()
                     ))
                     self.task = None
-                    
+
         except Exception as error:
             self.close_handles()
             self.response_queue.put(message.ExceptionMessage(error))

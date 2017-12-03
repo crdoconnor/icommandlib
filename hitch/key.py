@@ -59,7 +59,9 @@ class Engine(BaseEngine):
             if changed:
                 self.pip("install", "-r", "debugrequirements.txt").in_dir(self.path.key).run()
 
-        with hitchtest.monitor(pathq(self.path.project.joinpath("icommandlib")).ext("py")) as changed:
+        with hitchtest.monitor(
+            pathq(self.path.project.joinpath("icommandlib")).ext("py")
+        ) as changed:
             if changed:
                 self.pip("uninstall", "icommandlib", "-y").ignore_errors().run()
                 self.pip("install", ".").in_dir(self.path.project).run()
@@ -79,11 +81,11 @@ class Engine(BaseEngine):
     @expected_exception(HitchRunPyException)
     def start_code(self):
         self.running_python = self.example_py_code.running_code()
-    
+
     def pause_for_half_a_second(self):
         import time
         time.sleep(0.5)
-    
+
     def send_signal_and_wait_for_finish(self, signal_name):
         SIGNAL_NAMES_TO_NUMBERS = {
             name: getattr(signal, name) for name in dir(signal)
@@ -127,7 +129,7 @@ class Engine(BaseEngine):
                 self.current_step.update(message=error.actual_message)
             else:
                 raise
-    
+
     @validate(from_filenames=Seq(Str()))
     def processes_not_alive(self, from_filenames=None):
         still_alive = []
@@ -198,7 +200,7 @@ class Engine(BaseEngine):
     def sleep(self, seconds):
         import time
         time.sleep(float(seconds))
-    
+
     def on_success(self):
         if self.settings.get("overwrite artefacts"):
             self.new_story.save()

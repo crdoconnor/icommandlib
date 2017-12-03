@@ -28,7 +28,7 @@ class IProcess(object):
         self._pid = self._running_process._pid
         self._master_fd = self._running_process._stdin
         self._async_send = self._wait_for_message(message.AsyncSendMethodMessage)
-        
+
         self._final_screenshot = None
         self._running = True
 
@@ -37,17 +37,17 @@ class IProcess(object):
             response = self._response_queue.get(block=False)
         except queue.Empty:
             response = None
-        
+
         if response is not None:
             return self._deal_with_message(response)
-            
+
     def _deal_with_message(self, response, of_kind=None):
         if isinstance(response, message.ExceptionMessage):
             raise response.value
         if isinstance(response, message.TimeoutMessage):
             # On timeout, kill processes
             for descendant in self.psutil.children(recursive=True):
-                  descendant.kill()
+                descendant.kill()
             self.psutil.kill()
             raise exceptions.IProcessTimeout(
                 "Timed out after {0} seconds:\n\n{1}".format(
@@ -76,14 +76,15 @@ class IProcess(object):
     def _wait_for_message(self, of_kind):
         response = self._response_queue.get()
         return self._deal_with_message(response, of_kind=of_kind)
-    
+
     @property
     def pid(self):
+        # FIXME: Check messages first, process may have finished unexpectedly
         return self._pid
 
     @property
     def running(self):
-        # FIXME: Check messages first, process may have finished unexpectedly
+        # FIXME: Check messages first, process may have finished
         return self._running
 
     @property
@@ -148,7 +149,7 @@ class IProcess(object):
         """
         Get a 'screenshot' of the terminal window of a running or finished
         process.
-        
+
         Use stripshot() to clean the whitespace from the right and bottom.
         """
         if self._final_screenshot is not None:
@@ -157,11 +158,11 @@ class IProcess(object):
             self._order_queue.put(message.TakeScreenshot())
             self._async_send()
             return self._wait_for_message(message.Screenshot)
-    
+
     def stripshot(self):
         """
         Get a stripped screenshot of the terminal window of the running process.
-        
+
         i.e. all of the whitepace to the right and bottom will be cut.
         """
         return stripshot(self.screenshot())
@@ -171,7 +172,7 @@ class IProcess(object):
         Wait until the process has finished.
         """
         self._wait_for_message(message.ExitMessage)
-    
+
     def wait_for_successful_exit(self):
         """
         Wait until the process exits successfully. Raises exception
@@ -185,10 +186,10 @@ class IProcess(object):
                 response.exit_code,
                 stripshot(response.screenshot),
             )
-        
+
         return response
 
-    def kill(self): 
+    def kill(self):
         """
         Send a kill -9 to the process and all of its descendants.
         """

@@ -1,14 +1,14 @@
 def stripshot(text):
     """
-    Strips whitespace from right and bottom of 
+    Strips whitespace from right and bottom of
     a terminal screenshot.
-    
+
     >>> stripshot(u'a\\nb\\n')
     'a\\nb'
 
     >>> stripshot(u'a   \\nb    \\n    \\n')
     'a\\nb'
-    
+
     >>> stripshot(u'a   \\n     \\nc   \\n')
     'a\\n\\nc'
     """
