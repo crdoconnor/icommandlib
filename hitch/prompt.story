@@ -42,7 +42,7 @@ Send keys:
     Successful:
       given:
         code: |
-          process.wait_for_finish()
+          process.wait_for_successful_exit()
       steps:
       - Run code
       - File contents will be:
@@ -55,7 +55,7 @@ Send keys:
     Already exited:
       given:
         code: |
-          process.wait_for_finish()
+          process.wait_for_successful_exit()
 
           # We should have already known that the process would be finished
           process.send_keys("oops")
