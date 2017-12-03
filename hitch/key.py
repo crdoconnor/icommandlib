@@ -228,6 +228,17 @@ def regression():
     )
 
 
+def rewrite():
+    """
+    Run all stories and rewrite any with different output.
+    """
+    print(
+        StoryCollection(
+            pathq(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": True})
+        ).only_uninherited().ordered_by_name().play().report()
+    )
+
+
 def deploy(version):
     """
     Deploy to pypi as specified version.

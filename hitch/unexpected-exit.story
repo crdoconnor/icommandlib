@@ -18,11 +18,8 @@ Unexpected exit:
       process = ICommand(python("exitunexpectedly.py")).run()
       process.wait_until_output_contains("some message that will never appear")
   steps:
-    - Raises exception:
-        exception type: icommandlib.exceptions.UnexpectedExit
-        message: |-
-        
-        
-          an error occurred in this program
-
-          Process unexpectedly exited with exit_code 1
+  - Raises exception:
+      exception type: icommandlib.exceptions.UnexpectedExit
+      message: |-
+        Process unexpectedly exited with exit code 1. Output:
+        an error occurred in this program

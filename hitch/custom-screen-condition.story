@@ -63,5 +63,5 @@ Custom Screen Condition:
       - Raises exception:
           exception type: icommandlib.exceptions.AlreadyExited
           message: |-
-            Process already exited with '0'. Output:
+            Process already exited with 0. Output:
             favorite color:blue

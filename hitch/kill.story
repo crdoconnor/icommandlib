@@ -55,7 +55,7 @@ Kill:
           - parent.pid
           - child.pid
 
-    Already dead:
+    Died unexpectedly before kill:
       given:
         code: |
           process = ICommand(python("parent.py")).run()
@@ -64,10 +64,20 @@ Kill:
       steps:
       - Raises exception:
           exception type: icommandlib.exceptions.UnexpectedExit
-          message: |2-
-
-
+          message: |-
+            Process unexpectedly exited with exit code 0. Output:
             I got to the end!
 
-            Process unexpectedly exited with exit_code 0
+    Expected finish before kill:
+      given:
+        code: |
+          process = ICommand(python("parent.py")).run()
+          process.wait_for_successful_exit()
+          process.kill()
+      steps:
+      - Raises exception:
+          exception type: icommandlib.exceptions.AlreadyExited
+          message: |-
+            Process already exited with 0. Output:
+            I got to the end!
 

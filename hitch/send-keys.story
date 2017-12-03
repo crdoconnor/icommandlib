@@ -63,7 +63,7 @@ Send keys:
       - Raises exception:
           exception type: icommandlib.exceptions.AlreadyExited
           message: |-
-            Process already exited with '0'. Output:
+            Process already exited with 0. Output:
             favorite color:red
             favorite movie:the usual suspects
 
@@ -78,10 +78,7 @@ Send keys:
       steps:
       - Raises exception:
           exception type: icommandlib.exceptions.UnexpectedExit
-          message: |2-
-
-
-            favorite color:red                                                              
+          message: |-
+            Process unexpectedly exited with exit code 0. Output:
+            favorite color:red
             favorite movie:the usual suspects
-
-            Process unexpectedly exited with exit_code 0

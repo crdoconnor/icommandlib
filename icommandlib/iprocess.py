@@ -59,10 +59,8 @@ class IProcess(object):
             self._running = False
             if of_kind != message.ExitMessage:
                 raise exceptions.UnexpectedExit(
-                    "\n\n{0}\n\nProcess unexpectedly exited with exit_code {1}".format(
-                        response.value.screenshot.strip(),
-                        response.value.exit_code,
-                    )
+                    response.value.exit_code,
+                    response.value.screenshot,
                 )
             else:
                 self._exit_code = response.value.exit_code
@@ -85,10 +83,15 @@ class IProcess(object):
 
     @property
     def running(self):
+        # FIXME: Check messages first, process may have finished unexpectedly
         return self._running
 
     @property
     def psutil(self):
+        """
+        Return psutil.Process object from current process,
+        if psutil is installed.
+        """
         return psutil.Process(self._pid)
 
     def wait_until(self, condition_function, timeout=None):
@@ -112,7 +115,7 @@ class IProcess(object):
         """
         self.wait_until(
             lambda iscreen: text in iscreen.raw_bytes.decode('utf8'),
-            timeout
+            timeout,
         )
 
     def wait_until_on_screen(self, text, timeout=None):
@@ -186,7 +189,16 @@ class IProcess(object):
         return response
 
     def kill(self): 
-        self._check_messages()
-        self._order_queue.put(message.KillProcess())
-        self._async_send()
-        self._wait_for_message(message.ProcessKilled)
+        """
+        Send a kill -9 to the process and all of its descendants.
+        """
+        if self._running:
+            self._check_messages()
+            self._order_queue.put(message.KillProcess())
+            self._async_send()
+            self._wait_for_message(message.ProcessKilled)
+        else:
+            raise exceptions.AlreadyExited(
+                self._exit_code,
+                self._final_screenshot,
+            )

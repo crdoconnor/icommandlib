@@ -9,13 +9,7 @@ class IProcessTimeout(ICommandError):
     pass
 
 
-class UnexpectedExit(ICommandError):
-    pass
-
-
 class IProcessExitError(ICommandError):
-    MESSAGE = u"Process had non-zero exit code '{exit_code}'. Output:\n{screenshot}"
-
     def __init__(self, exit_code, screenshot):
         self.exit_code = exit_code
         self.screenshot = screenshot
@@ -28,9 +22,22 @@ class IProcessExitError(ICommandError):
         )
 
 
+class UnexpectedExit(IProcessExitError):
+    MESSAGE = (
+        u"Process unexpectedly exited with "
+        u"exit code {exit_code}. Output:\n{screenshot}"
+    )
+
+
 class AlreadyExited(IProcessExitError):
-    MESSAGE = u"Process already exited with '{exit_code}'. Output:\n{screenshot}"
+    MESSAGE = (
+        u"Process already exited with {exit_code}. "
+        u"Output:\n{screenshot}"
+    )
 
 
 class ExitWithError(IProcessExitError):
-    pass
+    MESSAGE = (
+        u"Process exited with non-zero exit code {exit_code}. "
+        u"Output:\n{screenshot}"
+    )

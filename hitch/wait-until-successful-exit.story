@@ -24,21 +24,21 @@ Wait until successful exit:
 
           with open("finalscreenshot.txt", "w") as handle:
               handle.write(finished_process.screenshot)
-          
+
           assert finished_process.exit_code == 0
       steps:
-        - Run code
-        - File contents will be:
-            filename: finalscreenshot.txt
-            reference: finalscreenshot
+      - Run code
+      - File contents will be:
+          filename: finalscreenshot.txt
+          reference: finalscreenshot
 
     Unsuccessful exit:
       given:
         code: |
           finished_process = ICommand(python("unsuccessful_exit.py")).run().wait_for_successful_exit()
       steps:
-        - Raises exception:
-            exception type: icommandlib.exceptions.ExitWithError
-            message: |-
-              Process had non-zero exit code '255'. Output:
-              something went wrong!
+      - Raises exception:
+          exception type: icommandlib.exceptions.ExitWithError
+          message: |-
+            Process exited with non-zero exit code 255. Output:
+            something went wrong!
