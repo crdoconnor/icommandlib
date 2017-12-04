@@ -35,7 +35,7 @@ Wait until successful exit:
     Unsuccessful exit:
       given:
         code: |
-          finished_process = ICommand(python("unsuccessful_exit.py")).run().wait_for_successful_exit()
+          ICommand(python("unsuccessful_exit.py")).run().wait_for_successful_exit()
       steps:
       - Raises exception:
           exception type: icommandlib.exceptions.ExitWithError
