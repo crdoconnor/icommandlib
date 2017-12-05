@@ -31,6 +31,7 @@ class IProcess(object):
 
         self._final_screenshot = None
         self._running = True
+        self._exit_code = None
 
     def _check_messages(self):
         try:
@@ -57,14 +58,13 @@ class IProcess(object):
             )
         if isinstance(response, message.ExitMessage):
             self._running = False
+            self._exit_code = response.value.exit_code
+            self._final_screenshot = response.value.screenshot
             if of_kind != message.ExitMessage:
                 raise exceptions.UnexpectedExit(
                     response.value.exit_code,
                     response.value.screenshot,
                 )
-            else:
-                self._exit_code = response.value.exit_code
-                self._final_screenshot = response.value.screenshot
         if not isinstance(response, of_kind):
             raise Exception(
                 "Threading error expected {0} got {1}".format(
@@ -86,6 +86,11 @@ class IProcess(object):
     def running(self):
         # FIXME: Check messages first, process may have finished
         return self._running
+
+    @property
+    def exit_code(self):
+        # FIXME: Check messages first, process may have finished
+        return self._exit_code
 
     @property
     def psutil(self):

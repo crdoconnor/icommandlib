@@ -20,12 +20,13 @@ Wait until successful exit:
     Without errors:
       given:
         code: |
-          finished_process = ICommand(python("successful_exit.py")).run().wait_for_successful_exit()
+          process = ICommand(python("successful_exit.py")).run()
+          process.wait_for_successful_exit()
 
           with open("finalscreenshot.txt", "w") as handle:
-              handle.write(finished_process.screenshot)
+              handle.write(process.screenshot())
 
-          assert finished_process.exit_code == 0
+          assert process.exit_code == 0, process.exit_code
       steps:
       - Run code
       - File contents will be:
