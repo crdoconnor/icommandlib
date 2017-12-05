@@ -30,18 +30,18 @@ class IProcessHandle(object):
     """
     Starts and then manages with the process directly.
 
-    The IProcessHandle operates in its own thread which operates upon
-    the following events:
+    The IProcessHandle operates in its own thread which operates and
+    reports to the main thread in response to the following events:
 
     * The process exiting of its own accord.
     * Orders from the master thread.
     * A timer (used for timing out waits).
     * Chunks of output spat out at the terminal (fed into virtual terminal).
     """
-    def __init__(self, icommand, order_queue, response_queue):
+    def __init__(self, icommand, order_queue, event_queue):
         try:
-            self.order_queue = order_queue       # Messages from master thread
-            self.response_queue = response_queue     # Messages to master thread
+            self.order_queue = order_queue   # Messages from master thread
+            self.event_queue = event_queue   # Messages to master thread
 
             self.master_fd, self.slave_fd = pty.openpty()
             self.stream = pyte.Stream()
@@ -61,7 +61,7 @@ class IProcessHandle(object):
             self.sigint_handle = pyuv.Signal(self.loop)
             self.sigint_handle.start(self.sigint_callback, signal.SIGINT)
 
-            self.process = pyuv.Process.spawn(
+            self.process_handle = pyuv.Process.spawn(
                 self.loop,
                 args=icommand._command.arguments,
                 env=icommand._command.env,
@@ -84,16 +84,16 @@ class IProcessHandle(object):
                 flags=pyuv.UV_PROCESS_DETACHED,
             )
 
-            self._pid = self.process.pid
+            self._pid = self.process_handle.pid
 
-            self.response_queue.put(
+            self.event_queue.put(
                 message.ProcessStartedMessage(message.RunningProcess(
                     self._pid, self.master_fd
                 ))
             )
 
             self.async_handle = pyuv.Async(self.loop, self.on_thread_callback)
-            self.response_queue.put(message.AsyncSendMethodMessage(self.async_handle.send))
+            self.event_queue.put(message.AsyncSendMethodMessage(self.async_handle.send))
 
             self.timeout_handle = None
             self.reset_timeout()
@@ -101,9 +101,12 @@ class IProcessHandle(object):
             self.loop.run()
         except Exception as error:
             self.close_handles()
-            self.response_queue.put(message.ExceptionMessage(error))
+            self.event_queue.put(message.ExceptionMessage(error))
 
     def screenshot(self):
+        """
+        Get a current screenshot of the screen as a string.
+        """
         return u"\n".join(line for line in self.screen.display)
 
     @property
@@ -118,7 +121,7 @@ class IProcessHandle(object):
         It is used to indicate that there's a message waiting on
         self._order_queue to pick up.
         """
-        self.check()
+        self.check_order_queue()
 
     def signal_callback(self, handle, signum):
         """
@@ -126,13 +129,13 @@ class IProcessHandle(object):
         a sigterm or sigint.
         """
         if signum in (signal.SIGTERM, signal.SIGINT):
-            proc = psutil.Process(self.process.pid)
+            proc = psutil.Process(self.process_handle.pid)
             for descendant in proc.children(recursive=True):
                 descendant.kill()
             proc.kill()
-        self.check()
+        self.check_order_queue()
         self.close_handles()
-        self.response_queue.put(
+        self.event_queue.put(
             message.ExitMessage(message.FinishedProcess(
                 None,
                 9,
@@ -153,7 +156,7 @@ class IProcessHandle(object):
         The timer is reset every time a condition is met.
         """
         self.close_handles()
-        self.response_queue.put(
+        self.event_queue.put(
             message.TimeoutMessage(self.timeout, self.screenshot())
         )
 
@@ -163,9 +166,9 @@ class IProcessHandle(object):
         own accord. Takes a screenshot and tells the control thread
         that we're done.
         """
-        self.check()
+        self.check_order_queue()
         self.close_handles()
-        self.response_queue.put(
+        self.event_queue.put(
             message.ExitMessage(message.FinishedProcess(
                 exit_status,
                 term_signal,
@@ -183,9 +186,9 @@ class IProcessHandle(object):
         else:
             self.stream.feed(data.decode('utf8'))
             self.raw_byte_output = self.raw_byte_output + data
-            self.check()
+            self.check_order_queue()
 
-    def check(self):
+    def check_order_queue(self):
         """
         Callback that is triggered when there is (probably) a message
         waiting on the order queue.
@@ -203,7 +206,7 @@ class IProcessHandle(object):
                         descendant.kill()
                     self.psutil.kill()
                     self.close_handles()
-                    self.response_queue.put(message.ProcessKilled())
+                    self.event_queue.put(message.ProcessKilled())
                 if isinstance(self.task, message.KeyPresses):
                     os.write(self.master_fd, self.task.value)
                     self.task = None
@@ -212,17 +215,17 @@ class IProcessHandle(object):
                     iscreen = IScreen(self.screen, self.raw_byte_output)
 
                     if self.task.condition_function(iscreen):
-                        self.response_queue.put(message.OutputMatched())
+                        self.event_queue.put(message.OutputMatched())
                         self.task = None
                 elif isinstance(self.task, message.TakeScreenshot):
-                    self.response_queue.put(message.Screenshot(
+                    self.event_queue.put(message.Screenshot(
                         self.screenshot()
                     ))
                     self.task = None
 
         except Exception as error:
             self.close_handles()
-            self.response_queue.put(message.ExceptionMessage(error))
+            self.event_queue.put(message.ExceptionMessage(error))
 
     def reset_timeout(self, timeout=None):
         """
@@ -251,9 +254,9 @@ class IProcessHandle(object):
         if not self.async_handle.closed:
             self.async_handle.close()
             self.async_handle = None
-        if not self.process.closed:
-            self.process.close()
-            self.process = None
+        if not self.process_handle.closed:
+            self.process_handle.close()
+            self.process_handle = None
         if not self.sigint_handle.closed:
             self.sigint_handle.close()
             self.sigint_handle = None
