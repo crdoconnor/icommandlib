@@ -33,14 +33,14 @@ class IProcess(object):
         self._running = True
         self._exit_code = None
 
-    def _check_messages(self):
+    def _check_messages(self, expected=None):
         try:
             response = self._response_queue.get(block=False)
         except queue.Empty:
             response = None
 
         if response is not None:
-            return self._deal_with_message(response)
+            return self._deal_with_message(response, of_kind=expected)
 
     def _deal_with_message(self, response, of_kind=None):
         if isinstance(response, message.ExceptionMessage):
@@ -54,6 +54,7 @@ class IProcess(object):
             )
         if isinstance(response, message.ExitMessage):
             self._running = False
+            self._pid = None
             self._exit_code = response.value.exit_code
             self._final_screenshot = response.value.screenshot
             if of_kind != message.ExitMessage:
@@ -75,17 +76,17 @@ class IProcess(object):
 
     @property
     def pid(self):
-        # FIXME: Check messages first, process may have finished unexpectedly
+        self._check_messages()
         return self._pid
 
     @property
     def running(self):
-        # FIXME: Check messages first, process may have finished
+        self._check_messages(expected=message.ExitMessage)
         return self._running
 
     @property
     def exit_code(self):
-        # FIXME: Check messages first, process may have finished
+        self._check_messages(expected=message.ExitMessage)
         return self._exit_code
 
     @property
