@@ -6,7 +6,7 @@ hitchdoc
 templex
 flake8
 jupyter_console
-strictyaml>=0.10.0
+strictyaml>=0.11.0
 twine
 simex
 q
