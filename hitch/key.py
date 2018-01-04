@@ -38,6 +38,7 @@ class Engine(BaseEngine):
             if not filepath.dirname().exists():
                 filepath.dirname().mkdir()
             filepath.write_text(str(text))
+            filepath.chmod("u+x")
 
         for filename, text in self.given.get("variables", {}).items():
             filepath = self.path.state.joinpath(filename)
@@ -208,9 +209,9 @@ class Engine(BaseEngine):
 
 @expected(strictyaml.exceptions.YAMLValidationError)
 @expected(exceptions.HitchStoryException)
-def tdd(*words):
+def bdd(*words):
     """
-    Run story in TDD mode that matches keywords (e.g. tdd wait finished)
+    Run story in BDD mode that matches keywords (e.g. tdd wait finished)
     """
     print(
         StoryCollection(
