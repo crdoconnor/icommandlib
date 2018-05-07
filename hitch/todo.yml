@@ -1,3 +1,6 @@
 ideas:
 - Do not kill on timeout.
 - Pass reaper object to ICommand.
+
+race conditions:
+- When the process dies after checking final screenshot readiness but before wait_for_end occurs. 
