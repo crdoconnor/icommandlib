@@ -1,6 +1,7 @@
 TTY:
   based on: icommandlib
-  description: |
+  known_failure: yes
+  about: |
     Wait until the word 'hello' appears on
     the TTY.
   given:

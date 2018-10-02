@@ -1,6 +1,6 @@
 Screensize:
   based on: icommandlib
-  description: |
+  about: |
     You can run an interactive command in a screensize of your choice.
   given:
     files:

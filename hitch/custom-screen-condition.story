@@ -1,6 +1,6 @@
 Custom Screen Condition:
   based on: icommandlib
-  description: |
+  about: |
     In this example, customized functions are used
     to detect various screen terminal conditions.
 

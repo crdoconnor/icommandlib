@@ -1,6 +1,6 @@
 Timeout:
   based on: icommandlib
-  description: |
+  about: |
     Every wait_for or wait_until command may, of
     course, be waiting for something that never occurs.
 

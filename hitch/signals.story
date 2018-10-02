@@ -1,6 +1,6 @@
 Stop on signals:
   based on: icommandlib
-  description: |
+  about: |
     When a SIGTERM is received, icommandlib should SIGKILL its
     process and subprocesses.
   given:

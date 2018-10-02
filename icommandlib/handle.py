@@ -1,4 +1,3 @@
-from icommandlib.utils import pty_make_controlling_tty
 from icommandlib import messages as message
 import signal
 import psutil
@@ -45,8 +44,6 @@ class IProcessHandle(object):
             self.event_queue = event_queue   # Messages to master thread
 
             self.master_fd, self.slave_fd = pty.openpty()
-
-            pty_make_controlling_tty(self.slave_fd)
 
             self.stream = pyte.Stream()
             self.screen = pyte.Screen(icommand.width, icommand.height)

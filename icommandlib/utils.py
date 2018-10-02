@@ -1,4 +1,3 @@
-import os
 
 
 def stripshot(text):
@@ -20,12 +19,13 @@ def stripshot(text):
     ).rstrip()
 
 
+"""
 def pty_make_controlling_tty(tty_fd):
-    """
+
     This makes the pseudo-terminal the controlling tty. This should be
     more portable than the pty.fork() function. Specifically, this should
     work on Solaris.
-    """
+
     child_name = os.ttyname(tty_fd)
 
     # Disconnect from controlling tty. Harmless if not already connected.
@@ -63,7 +63,7 @@ def pty_make_controlling_tty(tty_fd):
         raise Exception("Could not open controlling tty, /dev/tty")
     else:
         os.close(fd)
-
+"""
 
 """
 #import array

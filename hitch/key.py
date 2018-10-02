@@ -1,26 +1,28 @@
-from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
-from hitchstory import expected_exception
+from hitchstory import StoryCollection, GivenDefinition, GivenProperty, validate
+from hitchstory import InfoDefinition, InfoProperty
+from hitchstory import BaseEngine, no_stacktrace_for, HitchStoryException
 from hitchrun import expected, DIR
 from commandlib import Command, CommandError
-from pathquery import pathq
-from strictyaml import MapPattern, Map, Str, Float, Optional, Seq
+from pathquery import pathquery
+from strictyaml import MapPattern, Map, Str, Float, Seq, Bool
 from hitchrunpy import HitchRunPyException, ExamplePythonCode, ExpectedExceptionMessageWasDifferent
 from commandlib import python
-import hitchpython
-import strictyaml
-import hitchtest
+import hitchpylibrarytoolkit
+from templex import Templex
 import signal
 
 
 class Engine(BaseEngine):
-    schema = StorySchema(
-        given={
-            Optional("files"): MapPattern(Str(), Str()),
-            Optional("variables"): MapPattern(Str(), Str()),
-            Optional("python version"): Str(),
-            Optional("setup"): Str(),
-            Optional("code"): Str(),
-        },
+    given_definition = GivenDefinition(
+        files=GivenProperty(MapPattern(Str(), Str())),
+        variables=GivenProperty(MapPattern(Str(), Str())),
+        python_version=GivenProperty(Str()),
+        setup=GivenProperty(Str()),
+        code=GivenProperty(Str()),
+    )
+
+    info_definition = InfoDefinition(
+        known_failure=InfoProperty(Bool()),
     )
 
     def __init__(self, pathgroup, settings):
@@ -48,24 +50,11 @@ class Engine(BaseEngine):
 
         self.path.key.joinpath("code_that_does_things.py").copy(self.path.state)
 
-        self.python_package = hitchpython.PythonPackage(
-            self.given.get('python_version', self.given['python version'])
-        )
-        self.python_package.build()
-
-        self.pip = self.python_package.cmd.pip
-        self.python = self.python_package.cmd.python
-
-        with hitchtest.monitor([self.path.key.joinpath("debugrequirements.txt")]) as changed:
-            if changed:
-                self.pip("install", "-r", "debugrequirements.txt").in_dir(self.path.key).run()
-
-        with hitchtest.monitor(
-            pathq(self.path.project.joinpath("icommandlib")).ext("py")
-        ) as changed:
-            if changed:
-                self.pip("uninstall", "icommandlib", "-y").ignore_errors().run()
-                self.pip("install", ".").in_dir(self.path.project).run()
+        self.python = hitchpylibrarytoolkit.project_build(
+            "icommandlib",
+            self.path,
+            self.given["python version"],
+        ).bin.python
 
         self.example_py_code = ExamplePythonCode(
             self.python, self.path.state,
@@ -75,11 +64,11 @@ class Engine(BaseEngine):
             self.given.get('code', '')
         ).with_timeout(4.0)
 
-    @expected_exception(HitchRunPyException)
+    @no_stacktrace_for(HitchRunPyException)
     def run_code(self):
         self.result = self.example_py_code.run()
 
-    @expected_exception(HitchRunPyException)
+    @no_stacktrace_for(HitchRunPyException)
     def start_code(self):
         self.running_python = self.example_py_code.running_code()
 
@@ -97,7 +86,7 @@ class Engine(BaseEngine):
         )
         self.running_python.iprocess.wait_for_finish()
 
-    @expected_exception(HitchRunPyException)
+    @no_stacktrace_for(HitchRunPyException)
     @validate(
         exception_type=Map({"in python 2": Str(), "in python 3": Str()}) | Str(),
         message=Map({"in python 2": Str(), "in python 3": Str()}) | Str(),
@@ -162,32 +151,16 @@ class Engine(BaseEngine):
         artefact = self.path.key.joinpath(
             "artefacts", "{0}.txt".format(reference.replace(" ", "-").lower())
         )
-
-        from simex import DefaultSimex
-        simex = DefaultSimex(
-            open_delimeter="(((",
-            close_delimeter=")))",
-        )
-
-        simex_contents = content
-
-        if changeable is not None:
-            for replacement in changeable:
-                simex_contents = simex.compile(replacement).sub(replacement, simex_contents)
+        text = artefact.text()
 
         if not artefact.exists():
-            artefact.write_text(simex_contents)
+            artefact.write_text(content)
         else:
             if self.settings.get('overwrite artefacts'):
-                if artefact.bytes().decode('utf8') != simex_contents:
-                    artefact.write_text(simex_contents)
-                    print(content)
+                if artefact.bytes().decode('utf8') != content:
+                    artefact.write_text(content)
             else:
-                if simex.compile(artefact.bytes().decode('utf8')).match(content) is None:
-                    raise RuntimeError("Expected to find:\n{0}\n\nActual output:\n{1}".format(
-                        artefact.bytes().decode('utf8'),
-                        content,
-                    ))
+                Templex(text).assert_match(content)
 
     def file_contents_will_be(self, filename, text=None, reference=None, changeable=None):
         output_contents = self.path.state.joinpath(filename).bytes().decode('utf8')
@@ -207,39 +180,34 @@ class Engine(BaseEngine):
             self.new_story.save()
 
 
-@expected(strictyaml.exceptions.YAMLValidationError)
-@expected(exceptions.HitchStoryException)
+@expected(HitchStoryException)
 def bdd(*words):
     """
     Run story in BDD mode that matches keywords (e.g. tdd wait finished)
     """
-    print(
-        StoryCollection(
-            pathq(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": True})
-        ).shortcut(*words).play().report()
-    )
+    StoryCollection(
+        pathquery(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": True})
+    ).shortcut(*words).play()
 
 
 def regression():
     """
     Run all stories.
     """
-    print(
-        StoryCollection(
-            pathq(DIR.key).ext("story"), Engine(DIR, {})
-        ).only_uninherited().ordered_by_name().play().report()
-    )
+    StoryCollection(
+        pathquery(DIR.key).ext("story"), Engine(DIR, {})
+    ).only_uninherited().filter(
+        lambda story: not story.info.get('known_failure')
+    ).ordered_by_name().play()
 
 
 def rewrite():
     """
     Run all stories and rewrite any with different output.
     """
-    print(
-        StoryCollection(
-            pathq(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": True})
-        ).only_uninherited().ordered_by_name().play().report()
-    )
+    StoryCollection(
+        pathquery(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": True})
+    ).only_uninherited().ordered_by_name().play()
 
 
 def deploy(version):

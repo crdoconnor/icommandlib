@@ -1,6 +1,6 @@
 Process properties:
   based on: icommandlib
-  description: |
+  about: |
     Process properties can be queried at any time
     and should reflect the current status of the process.
   given:
@@ -18,7 +18,7 @@ Process properties:
       process = ICommand(python("waiting.py")).run()
   variations:
     Running:
-      description: |
+      about: |
         The 'running' property will report whether the
         status is currently running or not.
       given:
@@ -30,7 +30,7 @@ Process properties:
         - Run code
         
     Exit code:
-      description: |
+      about: |
         exit_code property will be None while the process
         is running, and contain the exit code once finished.
       given:
@@ -43,7 +43,7 @@ Process properties:
         
         
     Process ID:
-      description: |
+      about: |
         pid property contains the pid of the process while
         the process is running, and None once it is finished.
         

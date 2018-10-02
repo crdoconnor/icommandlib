@@ -1,6 +1,6 @@
 Unexpected exit:
   based on: icommandlib
-  description: |
+  about: |
     While waiting for a condition to occur, a command may exit
     unexpectedly. This will raise an UnexpectedExit exception.
   given:

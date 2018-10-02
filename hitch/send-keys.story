@@ -1,6 +1,6 @@
 Send keys:
   based on: icommandlib
-  description: |
+  about: |
     In this example, favoritecolor.py is the program
     which we are trying to interact with. It prompts twice
     - for favorite color and favorite movie and writes

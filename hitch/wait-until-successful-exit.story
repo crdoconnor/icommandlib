@@ -1,6 +1,6 @@
 Wait until successful exit:
   based on: icommandlib
-  description: |
+  about: |
     Wait until exit with status code 0.
   given:
     files:
