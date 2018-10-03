@@ -70,8 +70,13 @@ class IProcess(object):
             )
         return response.value
 
-    def _wait_for_event(self, of_kind):
-        response = self._event_queue.get()
+    def _wait_for_event(self, of_kind, timeout=None):
+        try:
+            response = self._event_queue.get(timeout=timeout)
+        except queue.Empty:
+            raise exceptions.IProcessTimeout(
+                "Timed out waiting for exit."
+            )
         return self._handle_event(response, of_kind=of_kind)
 
     @property
@@ -169,19 +174,19 @@ class IProcess(object):
         """
         return stripshot(self.screenshot())
 
-    def wait_for_finish(self):
+    def wait_for_finish(self, timeout=None):
         """
         Wait until the process has finished.
         """
-        self._wait_for_event(message.ExitMessage)
+        self._wait_for_event(message.ExitMessage, timeout=timeout)
 
-    def wait_for_successful_exit(self):
+    def wait_for_successful_exit(self, timeout=None):
         """
         Wait until the process exits successfully. Raises exception
         if the process is still open after timeout or it exits
         with an exit code other than 0.
         """
-        response = self._wait_for_event(message.ExitMessage)
+        response = self._wait_for_event(message.ExitMessage, timeout=timeout)
 
         if response.exit_code != 0:
             raise exceptions.ExitWithError(
