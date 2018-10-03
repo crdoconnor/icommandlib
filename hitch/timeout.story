@@ -94,7 +94,12 @@ Timeout:
       - Raises Exception:
           exception type: icommandlib.exceptions.IProcessTimeout
           message: |-
-            Timed out.
+            Timed out waiting for exit.
+
+      - Processes not alive:
+          from_filenames:
+          - favoritecolor.pid
+
 
     wait_for_successful_exit:
       given:
@@ -111,3 +116,7 @@ Timeout:
           exception type: icommandlib.exceptions.IProcessTimeout
           message: |-
             Timed out waiting for exit.
+
+      - Processes not alive:
+          from_filenames:
+          - favoritecolor.pid
