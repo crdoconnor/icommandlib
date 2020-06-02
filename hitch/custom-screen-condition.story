@@ -57,7 +57,7 @@ Custom Screen Condition:
           process.wait_until(check_with_error)
       steps:
       - Raises exception:
-          exception type: code_that_does_things.ExampleException
+          exception type: __main__.ExampleException
 
     Wait until when program finished:
       given:
