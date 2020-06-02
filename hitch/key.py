@@ -48,8 +48,6 @@ class Engine(BaseEngine):
                 filepath.dirname().mkdir()
             filepath.write_text(str(text))
 
-        self.path.key.joinpath("code_that_does_things.py").copy(self.path.state)
-
         self.python = hitchpylibrarytoolkit.project_build(
             "icommandlib",
             self.path,
@@ -62,7 +60,7 @@ class Engine(BaseEngine):
             self.given.get('setup', '')
         ).with_code(
             self.given.get('code', '')
-        ).with_timeout(4.0)
+        ).with_timeout(4.0).in_dir(self.path.state)
 
     @no_stacktrace_for(HitchRunPyException)
     def run_code(self):

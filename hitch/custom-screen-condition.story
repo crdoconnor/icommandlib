@@ -20,15 +20,22 @@ Custom Screen Condition:
 
         sys.exit(0)
     setup: |
-      from code_that_does_things import raise_example_exception
       from icommandlib import ICommand
       from commandlib import python
+      
+      class ExampleException(Exception):
+            """
+            This is a demonstration exception's docstring.
+
+            It spreads across multiple lines.
+            """
+            pass
 
       def check_for_favorite_color(screen):
           return "favorite color" in screen.text
 
       def check_with_error(screen):
-          raise_example_exception()
+          raise ExampleException()
           
       process = ICommand(python("favoritecolor.py")).run()
   variations:
