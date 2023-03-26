@@ -1,0 +1,8 @@
+# continue on failure
+python version: 3.8.16
+packages:
+  commandlib: 0.3.5
+  pyte: 0.6.0
+  pyuv: 1.4.0
+  uvloop: 0.14.0
+  psutil: 5.4.0

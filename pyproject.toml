@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["icommandlib"]
+
+[project]
+name = "icommandlib"
+authors = [
+    {name = "Colm O'Connor", email = "colm.oconnor.github@gmail.com"},
+]
+description = "Pythonic interactive command runner."
+license = {text = "MIT"}
+requires-python = ">=3.7.0"
+keywords = ["subprocess", "cli", "interactive"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Software Development :: Libraries",
+    "Natural Language :: English",
+    "Environment :: Console",
+]
+dependencies = [
+    "commandlib>=0.3.4",
+    "pyte>=0.6.0",
+    "pyuv>=1.4.0",
+    "uvloop>=0.14.0",
+    "psutil>=5.4.0"
+]
+dynamic = ["version", "readme"]
+
+[project.urls]
+homepage = "https://hitchdev.com/icommandlib"
+documentation = "https://hitchdev.com/icommandlib/using"
+repository = "https://github.com/icommandlib/hitchstory"
+changelog = "https://hitchdev.com/icommandlib/changelog"
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md",], content-type = "text/markdown"}
+version = {file = "VERSION"}

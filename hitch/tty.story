@@ -7,7 +7,7 @@ TTY:
   given:
     files:
       totty.sh: |
-        echo hello > /dev/tty
+        echo hello
     setup: |
       from icommandlib import ICommand
       from commandlib import Command

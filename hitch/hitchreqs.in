@@ -1,2 +1,2 @@
-hitchpylibrarytoolkit>=0.1.8
-hitchrun
+hitchpylibrarytoolkit==0.6.3
+hitchstory>=0.15.3
