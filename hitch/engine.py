@@ -14,8 +14,14 @@ import signal
 
 class Engine(BaseEngine):
     given_definition = GivenDefinition(
-        files=GivenProperty(MapPattern(Str(), Str())),
-        variables=GivenProperty(MapPattern(Str(), Str())),
+        files=GivenProperty(
+            MapPattern(Str(), Str()),
+            inherit_via=GivenProperty.OVERRIDE,
+        ),
+        variables=GivenProperty(
+            MapPattern(Str(), Str()),
+            inherit_via=GivenProperty.OVERRIDE,
+        ),
         python_version=GivenProperty(Str()),
         setup=GivenProperty(Str()),
         code=GivenProperty(Str()),
