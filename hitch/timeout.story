@@ -94,7 +94,14 @@ Timeout:
       - Raises Exception:
           exception type: icommandlib.exceptions.IProcessTimeout
           message: |-
-            Timed out waiting for exit.
+            Timed out after 0.5 seconds:
+
+            favorite color:blue
+            blue
+            favorite film:usual suspects
+            usual suspects
+            favorite country:france
+            france
 
       - Processes not alive:
           from_filenames:
@@ -115,7 +122,14 @@ Timeout:
       - Raises Exception:
           exception type: icommandlib.exceptions.IProcessTimeout
           message: |-
-            Timed out waiting for exit.
+            Timed out after 0.5 seconds:
+
+            favorite color:blue
+            blue
+            favorite film:usual suspects
+            usual suspects
+            favorite country:france
+            france
 
       - Processes not alive:
           from_filenames:

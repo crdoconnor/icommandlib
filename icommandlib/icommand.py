@@ -9,8 +9,11 @@ class ICommand(object):
 
     Using .run() will both start the command and return an IProcess.
     """
+
     def __init__(self, command):
-        assert isinstance(command, commandlib.Command), "must be type 'commandlib.Command'"
+        assert isinstance(
+            command, commandlib.Command
+        ), "must be type 'commandlib.Command'"
         self._command = command
         self._timeout = None
         self._width = 80

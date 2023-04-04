@@ -13,6 +13,7 @@ class IScreen(object):
     Represents the output of a process, both as raw bytes
     and a virtual terminal (screen).
     """
+
     def __init__(self, screen, raw_byte_output):
         self.screen = screen
         self.raw_bytes = raw_byte_output
@@ -23,7 +24,7 @@ class IScreen(object):
 
     @property
     def text(self):
-        return u'\n'.join(self.display)
+        return "\n".join(self.display)
 
 
 class IProcessHandle(object):
@@ -38,17 +39,18 @@ class IProcessHandle(object):
     * A timer (used for timing out waits).
     * Chunks of output spat out at the terminal (fed into virtual terminal).
     """
+
     def __init__(self, icommand, order_queue, event_queue):
         try:
-            self.order_queue = order_queue   # Messages from master thread
-            self.event_queue = event_queue   # Messages to master thread
+            self.order_queue = order_queue  # Messages from master thread
+            self.event_queue = event_queue  # Messages to master thread
 
             self.master_fd, self.slave_fd = pty.openpty()
 
             self.stream = pyte.Stream()
             self.screen = pyte.Screen(icommand.width, icommand.height)
             self.stream.attach(self.screen)
-            self.raw_byte_output = b''
+            self.raw_byte_output = b""
             self.timeout = icommand.timeout
             self.task = None
 
@@ -88,9 +90,9 @@ class IProcessHandle(object):
             self._pid = self.process_handle.pid
 
             self.event_queue.put(
-                message.ProcessStartedMessage(message.RunningProcess(
-                    self._pid, self.master_fd
-                ))
+                message.ProcessStartedMessage(
+                    message.RunningProcess(self._pid, self.master_fd)
+                )
             )
 
             self.async_handle = pyuv.Async(self.loop, self.on_thread_callback)
@@ -108,7 +110,7 @@ class IProcessHandle(object):
         """
         Get a current screenshot of the screen as a string.
         """
-        return u"\n".join(line for line in self.screen.display)
+        return "\n".join(line for line in self.screen.display)
 
     @property
     def psutil(self):
@@ -137,11 +139,13 @@ class IProcessHandle(object):
         self.check_order_queue()
         self.close_handles()
         self.event_queue.put(
-            message.ExitMessage(message.FinishedProcess(
-                None,
-                9,
-                '\n'.join(self.screen.display),
-            ))
+            message.ExitMessage(
+                message.FinishedProcess(
+                    None,
+                    9,
+                    "\n".join(self.screen.display),
+                )
+            )
         )
 
     def sigterm_callback(self, handle, signum):
@@ -157,9 +161,7 @@ class IProcessHandle(object):
         The timer is reset every time a condition is met.
         """
         self.close_handles()
-        self.event_queue.put(
-            message.TimeoutMessage(self.timeout, self.screenshot())
-        )
+        self.event_queue.put(message.TimeoutMessage(self.timeout, self.screenshot()))
 
     def on_exit(self, proc, exit_status, term_signal):
         """
@@ -170,11 +172,13 @@ class IProcessHandle(object):
         self.check_order_queue()
         self.close_handles()
         self.event_queue.put(
-            message.ExitMessage(message.FinishedProcess(
-                exit_status,
-                term_signal,
-                '\n'.join(self.screen.display),
-            ))
+            message.ExitMessage(
+                message.FinishedProcess(
+                    exit_status,
+                    term_signal,
+                    "\n".join(self.screen.display),
+                )
+            )
         )
 
     def on_tty_read(self, handle, data, error):
@@ -185,7 +189,7 @@ class IProcessHandle(object):
         if data is None:
             pass
         else:
-            self.stream.feed(data.decode('utf8'))
+            self.stream.feed(data.decode("utf8"))
             self.raw_byte_output = self.raw_byte_output + data
             self.check_order_queue()
 
@@ -219,9 +223,7 @@ class IProcessHandle(object):
                         self.event_queue.put(message.OutputMatched())
                         self.task = None
                 elif isinstance(self.task, message.TakeScreenshot):
-                    self.event_queue.put(message.Screenshot(
-                        self.screenshot()
-                    ))
+                    self.event_queue.put(message.Screenshot(self.screenshot()))
                     self.task = None
 
         except Exception as error:

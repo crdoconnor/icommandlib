@@ -25,6 +25,7 @@ class Engine(BaseEngine):
         python_version=GivenProperty(Str()),
         setup=GivenProperty(Str()),
         code=GivenProperty(Str()),
+        signal=GivenProperty(Str()),
     )
 
     info_definition = InfoDefinition(
@@ -55,19 +56,32 @@ class Engine(BaseEngine):
                 filepath.dirname().mkdir()
             filepath.write_text(str(text))
 
+        if "signal" in self.given:
+            SIGNAL_NAMES_TO_NUMBERS = {
+                name: getattr(signal, name).value
+                for name in dir(signal)
+                if name.startswith("SIG") and "_" not in name
+            }
+            self._signal = SIGNAL_NAMES_TO_NUMBERS[self.given["signal"]]
+        else:
+            self._signal = None
+
         self.python = Command(self._python_path)
 
-        self.example_py_code = ExamplePythonCode(
-            self.python, self.path.state,
-        ).with_setup_code(
-            self.given.get('setup', '')
-        ).with_code(
-            self.given.get('code', '')
-        ).with_timeout(4.0).in_dir(self.path.state)
+        self.example_py_code = (
+            ExamplePythonCode(
+                self.python,
+                self.path.state,
+            )
+            .with_setup_code(self.given.get("setup", ""))
+            .with_code(self.given.get("code", ""))
+            .with_timeout(4.0)
+            .in_dir(self.path.state)
+        )
 
     @no_stacktrace_for(HitchRunPyException)
     def run_code(self):
-        self.result = self.example_py_code.run()
+        self.result = self.example_py_code.with_env(HOW_TO_DIE=self._signal).run()
 
     @no_stacktrace_for(HitchRunPyException)
     def start_code(self):
@@ -75,12 +89,14 @@ class Engine(BaseEngine):
 
     def pause_for_half_a_second(self):
         import time
+
         time.sleep(0.5)
 
     def send_signal_and_wait_for_finish(self, signal_name):
         SIGNAL_NAMES_TO_NUMBERS = {
-            name: getattr(signal, name) for name in dir(signal)
-            if name.startswith('SIG') and '_' not in name
+            name: getattr(signal, name)
+            for name in dir(signal)
+            if name.startswith("SIG") and "_" not in name
         }
         self.running_python.iprocess.psutil._send_signal(
             int(SIGNAL_NAMES_TO_NUMBERS[signal_name])
@@ -101,16 +117,20 @@ class Engine(BaseEngine):
         if exception_type is not None:
             if not isinstance(exception_type, str):
                 differential = True
-                exception_type = exception_type['in python 2']\
-                    if self.given['python version'].startswith("2")\
-                    else exception_type['in python 3']
+                exception_type = (
+                    exception_type["in python 2"]
+                    if self.given["python version"].startswith("2")
+                    else exception_type["in python 3"]
+                )
 
         if message is not None:
             if not isinstance(message, str):
                 differential = True
-                message = message['in python 2']\
-                    if self.given['python version'].startswith("2")\
-                    else message['in python 3']
+                message = (
+                    message["in python 2"]
+                    if self.given["python version"].startswith("2")
+                    else message["in python 3"]
+                )
 
         try:
             result = self.example_py_code.expect_exceptions().run()
@@ -126,8 +146,9 @@ class Engine(BaseEngine):
         still_alive = []
         for from_filename in from_filenames:
             import psutil
+
             pid = int(self.path.state.joinpath(from_filename).text().strip())
-            
+
             try:
                 status = psutil.Process(pid).status()
                 if status == "zombie":
@@ -137,7 +158,9 @@ class Engine(BaseEngine):
             except psutil.NoSuchProcess:
                 pass
         if len(still_alive) > 0:
-            raise Exception("Processes from {0} still alive.".format(', '.join(still_alive)))
+            raise Exception(
+                "Processes from {0} still alive.".format(", ".join(still_alive))
+            )
 
     def touch_file(self, filename):
         self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)
@@ -147,10 +170,12 @@ class Engine(BaseEngine):
             if content.strip() == text.strip():
                 return
             else:
-                raise RuntimeError("Expected to find:\n{0}\n\nActual output:\n{1}".format(
-                    text,
-                    content,
-                ))
+                raise RuntimeError(
+                    "Expected to find:\n{0}\n\nActual output:\n{1}".format(
+                        text,
+                        content,
+                    )
+                )
 
         artefact = self.path.key.joinpath(
             "artefacts", "{0}.txt".format(reference.replace(" ", "-").lower())
@@ -166,18 +191,27 @@ class Engine(BaseEngine):
             else:
                 Templex(text).assert_match(content)
 
-    def file_contents_will_be(self, filename, text=None, reference=None, changeable=None):
-        output_contents = self.path.state.joinpath(filename).bytes().decode('utf8')
+    def file_contents_will_be(
+        self, filename, text=None, reference=None, changeable=None
+    ):
+        output_contents = self.path.state.joinpath(filename).bytes().decode("utf8")
         self._will_be(output_contents, text, reference, changeable)
 
     def output_will_be(self, text=None, reference=None, changeable=None):
-        output_contents = self.path.state.joinpath("output.txt").bytes().decode('utf8')
+        output_contents = self.path.state.joinpath("output.txt").bytes().decode("utf8")
         self._will_be(output_contents, text, reference, changeable)
 
     @validate(seconds=Float())
     def sleep(self, seconds):
         import time
+
         time.sleep(float(seconds))
+
+    def tear_down(self):
+        from path import Path
+
+        if Path("/tmp/q").exists():
+            print(Path("/tmp/q").text())
 
     def on_success(self):
         if self._rewrite:

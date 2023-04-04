@@ -7,6 +7,7 @@ class ExampleException(Exception):
 
     It spreads across multiple lines.
     """
+
     pass
 
 
@@ -24,20 +25,20 @@ def raise_example_exception(text=""):
 
 
 def output(contents):
-    with open("output.txt", 'w') as handle:
+    with open("output.txt", "w") as handle:
         handle.write("{0}\n".format(contents))
 
 
 def append(contents):
-    with open("output.txt", 'a') as handle:
+    with open("output.txt", "a") as handle:
         handle.write("{0}\n".format(contents))
 
 
 def reticulate_splines():
-    with open("splines_reticulated.txt", 'w') as handle:
+    with open("splines_reticulated.txt", "w") as handle:
         handle.write("{0}\n".format("splines_reticulated"))
 
 
 def kick_llamas_ass():
-    with open("kicked_llamas_ass.txt", 'w') as handle:
+    with open("kicked_llamas_ass.txt", "w") as handle:
         handle.write("{0}\n".format("kicked_llamas_ass"))

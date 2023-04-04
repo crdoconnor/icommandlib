@@ -37,7 +37,7 @@ Process properties:
         code: |
           assert process.exit_code is None
           time.sleep(0.2)
-          assert process.exit_code == 0
+          assert process.exit_code == 0, process.exit_code
       steps:
         - Run code
         
@@ -59,7 +59,7 @@ Process properties:
               now_finished = process.pid
           except UnexpectedExit:
               pass
-              
+
           assert process.pid is None, process.pid
       steps:
         - Run code
