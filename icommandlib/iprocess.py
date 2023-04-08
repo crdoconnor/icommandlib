@@ -161,9 +161,10 @@ class IProcess(object):
         except psutil.NoSuchProcess:
             pass
         if self._ptyprocess.exitstatus is None:
-            import web_pdb
-
-            web_pdb.set_trace()
+            raise Exception((
+                "This shouldn't happen. "
+                "Please raise bug at https://github.com/crdoconnor/icommandlib"
+            ))
         return self._ptyprocess.exitstatus
 
     def _read(self):
@@ -172,9 +173,7 @@ class IProcess(object):
         if fd != -1:
             readable, _, _ = select.select([fd], [], [], 0.01)
 
-            if len(readable) == 0:
-                time.sleep(0.01)
-            else:
+            if len(readable) != 0:
                 try:
                     text = self._ptyprocess.read()
                     self.iscreen.feed(text)
@@ -281,16 +280,14 @@ class IProcess(object):
         start_time = time.time()
 
         while True:
+            self._read()
+
             if not self._ptyprocess.isalive():
-                self._read()
                 self._ptyprocess.close()
                 self.finished = True
                 return
 
-            time.sleep(0.01)
-
             if time.time() - start_time > timeout:
-                self._read()
                 raise exceptions.IProcessTimeout(
                     "Timed out after {0} seconds:\n\n{1}".format(
                         timeout,
