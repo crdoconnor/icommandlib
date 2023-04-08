@@ -14,23 +14,30 @@ Screensize:
         sys.stdout.flush()
         time.sleep(1)
     setup: |
-        from icommandlib import ICommand
-        from commandlib import python
+      from icommandlib import ICommand
+      from commandlib import python
 
-        process = ICommand(python("favoritecolor.py")).screensize(5, 10).run()
+      process = ICommand(python("favoritecolor.py")).screensize(5, 10).run()
     code: |
-        process.wait_until_output_contains("favorite color:")
-        process.send_keys("red\n")
+      process.wait_until_output_contains("favorite color:")
+      process.send_keys("red\n")
 
-        process.wait_until_output_contains("RED")
+      process.wait_until_output_contains("RED")
 
-        with open("screenshot.txt", "w") as handle:
-            handle.write(process.screenshot())
+      with open("screenshot.txt", "w") as handle:
+          handle.write(process.screenshot())
 
-        process.wait_for_finish()
+      process.wait_for_finish()
 
   steps:
-    - Run code
-    - File contents will be:
-        reference: resized screenshot
-        filename: screenshot.txt
+  - Run code
+  - File contents should be:
+      filename: screenshot.txt
+      stripped: |-
+        favor
+        ite c
+        olor:
+        red
+        RED
+      height: 10
+      width: 5

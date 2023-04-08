@@ -47,9 +47,12 @@ Custom Screen Condition:
           process.wait_for_finish()
       steps:
       - Run code
-      - File contents will be:
+          
+      - File contents should be:
           filename: color.txt
-          text: blue
+          stripped: blue
+          height: 1
+          width: 4
 
     Check with error:
       given:

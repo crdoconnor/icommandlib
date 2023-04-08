@@ -191,12 +191,6 @@ class Engine(BaseEngine):
             else:
                 Templex(text).assert_match(content)
 
-    def file_contents_will_be(
-        self, filename, text=None, reference=None, changeable=None
-    ):
-        output_contents = self.path.state.joinpath(filename).bytes().decode("utf8")
-        self._will_be(output_contents, text, reference, changeable)
-
     @validate(height=Int(), width=Int())
     def file_contents_should_be(self, filename, stripped, height, width):
         output_contents = self.path.state.joinpath(filename).text()
@@ -220,9 +214,9 @@ class Engine(BaseEngine):
             else:
                 raise
 
-    def output_will_be(self, text=None, reference=None, changeable=None):
-        output_contents = self.path.state.joinpath("output.txt").bytes().decode("utf8")
-        self._will_be(output_contents, text, reference, changeable)
+    #def output_will_be(self, text=None, reference=None, changeable=None):
+        #output_contents = self.path.state.joinpath("output.txt").bytes().decode("utf8")
+        #self._will_be(output_contents, text, reference, changeable)
 
     @validate(seconds=Float())
     def sleep(self, seconds):

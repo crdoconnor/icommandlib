@@ -29,9 +29,11 @@ Wait until successful exit:
           assert process.exit_code == 0, process.exit_code
       steps:
       - Run code
-      - File contents will be:
+      - File contents should be:
           filename: finalscreenshot.txt
-          reference: finalscreenshot
+          stripped: hello
+          height: 24
+          width: 80
 
     Unsuccessful exit:
       given:

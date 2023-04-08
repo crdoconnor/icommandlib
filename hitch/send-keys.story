@@ -45,12 +45,19 @@ Send keys:
           process.wait_for_successful_exit()
       steps:
       - Run code
-      - File contents will be:
+
+      - File contents should be:
           filename: color.txt
-          text: red
-      - File contents will be:
+          stripped: red
+          height: 1
+          width: 3
+
+      - File contents should be:
           filename: movie.txt
-          text: the usual suspects
+          stripped: the usual suspects
+          height: 1
+          width: 18
+
 
     Already exited:
       given:
