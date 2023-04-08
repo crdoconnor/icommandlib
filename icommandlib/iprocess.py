@@ -41,20 +41,6 @@ class IProcess(object):
 
     def __init__(self, icommand):
         self._icommand = icommand
-        # self._order_queue = queue.Queue()
-        # self._event_queue = queue.Queue()
-        # self._handle = threading.Thread(
-        # target=IProcessHandle,
-        # args=(icommand, self._order_queue, self._event_queue)
-        # )
-        # self._handle.start()
-
-        # self._running_process = self._wait_for_event(message.ProcessStartedMessage)
-
-        # self._pid = self._running_process._pid
-        # self._master_fd = self._running_process._stdin
-        # self._async_send = self._wait_for_event(message.AsyncSendMethodMessage)
-
         self._ptyprocess = PtyProcessUnicode.spawn(
             argv=icommand._command.arguments,
             env=icommand._command.env,
@@ -85,52 +71,6 @@ class IProcess(object):
         self._read()
         proc.kill()
 
-    # def _check_events(self, expected=None):
-    # try:
-    # response = self._event_queue.get(block=False)
-    # except queue.Empty:
-    # response = None
-
-    # if response is not None:
-    # return self._handle_event(response, of_kind=expected)
-
-    # def _handle_event(self, response, of_kind=None):
-    # if isinstance(response, message.ExceptionMessage):
-    # raise response.value
-    # if isinstance(response, message.TimeoutMessage):
-    # raise exceptions.IProcessTimeout(
-    # "Timed out after {0} seconds:\n\n{1}".format(
-    # response.after,
-    # stripshot(response.screenshot),
-    # )
-    # )
-    # if isinstance(response, message.ExitMessage):
-    # self._running = False
-    # self._pid = None
-    # self._exit_code = response.value.exit_code
-    # self._final_screenshot = response.value.screenshot
-    # if of_kind != message.ExitMessage:
-    # raise exceptions.UnexpectedExit(
-    # response.value.exit_code,
-    # response.value.screenshot,
-    # )
-    # if not isinstance(response, of_kind):
-    # raise Exception(
-    # "Threading error expected {0} got {1}".format(
-    # type(of_kind), type(of_kind)
-    # )
-    # )
-    # return response.value
-
-    # def _wait_for_event(self, of_kind, timeout=None):
-    # try:
-    # response = self._event_queue.get(timeout=timeout)
-    # except queue.Empty:
-    # raise exceptions.IProcessTimeout(
-    # "Timed out waiting for exit."
-    # )
-    # return self._handle_event(response, of_kind=of_kind)
-
     @property
     def pid(self):
         if not self.running:
@@ -151,7 +91,6 @@ class IProcess(object):
 
     @property
     def exit_code(self):
-        # self._check_events(expected=message.ExitMessage)
         if self.running:
             return None
         try:
@@ -161,10 +100,12 @@ class IProcess(object):
         except psutil.NoSuchProcess:
             pass
         if self._ptyprocess.exitstatus is None:
-            raise Exception((
-                "This shouldn't happen. "
-                "Please raise bug at https://github.com/crdoconnor/icommandlib"
-            ))
+            raise Exception(
+                (
+                    "This shouldn't happen. "
+                    "Please raise bug at https://github.com/crdoconnor/icommandlib"
+                )
+            )
         return self._ptyprocess.exitstatus
 
     def _read(self):
@@ -302,10 +243,6 @@ class IProcess(object):
         with an exit code other than 0.
         """
         self.wait_for_finish(timeout=timeout)
-
-        # self._ptyprocess.wait()
-        # assert self._ptyprocess.exitstatus is not None
-
         exit_status = self.exit_code
 
         if exit_status != 0:
