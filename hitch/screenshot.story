@@ -29,14 +29,23 @@ Screenshot:
               handle.write(process.screenshot())
 
           process.wait_for_finish()
-          
+
           with open("stripshot-after-finish.txt", "w") as handle:
               handle.write(process.stripshot())
       steps:
-        - Run code
-        - File contents will be:
-            filename: screenshot-before-finish.txt
-            reference: screenshot-before-finish
-        - File contents will be:
-            filename: stripshot-after-finish.txt
-            reference: stripshot-after-finish
+      - Run code
+      - File contents should be:
+          filename: screenshot-before-finish.txt
+          stripped: |-
+            favorite color:red
+            RED
+          height: 24
+          width: 80
+
+      - File contents should be:
+          filename: stripshot-after-finish.txt
+          stripped: |-
+            favorite color:red
+            RED
+          height: 2
+          width: 18

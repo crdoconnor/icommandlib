@@ -197,6 +197,29 @@ class Engine(BaseEngine):
         output_contents = self.path.state.joinpath(filename).bytes().decode("utf8")
         self._will_be(output_contents, text, reference, changeable)
 
+    @validate(height=Int(), width=Int())
+    def file_contents_should_be(self, filename, stripped, height, width):
+        output_contents = self.path.state.joinpath(filename).text()
+
+        output_stripped = "\n".join(
+            line.rstrip() for line in output_contents.split("\n") if line != ""
+        ).rstrip()
+
+        output_height = len(output_contents.split("\n"))
+        output_width = max(len(line) for line in output_contents.split("\n"))
+
+        try:
+            Templex(stripped).assert_match(output_stripped)
+            assert output_height == height
+            assert output_width == width
+        except AssertionError:
+            if self._rewrite:
+                self.current_step.update(stripped=output_stripped)
+                self.current_step.update(height=output_height)
+                self.current_step.update(width=output_width)
+            else:
+                raise
+
     def output_will_be(self, text=None, reference=None, changeable=None):
         output_contents = self.path.state.joinpath("output.txt").bytes().decode("utf8")
         self._will_be(output_contents, text, reference, changeable)
