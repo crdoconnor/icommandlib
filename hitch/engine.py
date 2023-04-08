@@ -1,7 +1,7 @@
 from hitchstory import StoryCollection, BaseEngine, validate
 from hitchstory import GivenDefinition, GivenProperty, InfoDefinition, InfoProperty
 from strictyaml import Str, Map, Optional, Enum, MapPattern, Int, Bool, Seq, Float
-from hitchstory import no_stacktrace_for
+from hitchstory import no_stacktrace_for, Failure
 from hitchrunpy import (
     ExamplePythonCode,
     HitchRunPyException,
@@ -9,8 +9,10 @@ from hitchrunpy import (
 )
 from commandlib import Command
 from templex import Templex
+from path import Path
+import psutil
 import signal
-
+import time
 
 class Engine(BaseEngine):
     given_definition = GivenDefinition(
@@ -88,8 +90,6 @@ class Engine(BaseEngine):
         self.running_python = self.example_py_code.running_code()
 
     def pause_for_half_a_second(self):
-        import time
-
         time.sleep(0.5)
 
     def send_signal_and_wait_for_finish(self, signal_name):
@@ -145,8 +145,6 @@ class Engine(BaseEngine):
     def processes_not_alive(self, from_filenames=None):
         still_alive = []
         for from_filename in from_filenames:
-            import psutil
-
             pid = int(self.path.state.joinpath(from_filename).text().strip())
 
             try:
@@ -158,38 +156,12 @@ class Engine(BaseEngine):
             except psutil.NoSuchProcess:
                 pass
         if len(still_alive) > 0:
-            raise Exception(
+            raise Failure(
                 "Processes from {0} still alive.".format(", ".join(still_alive))
             )
 
     def touch_file(self, filename):
         self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)
-
-    def _will_be(self, content, text, reference, changeable=None):
-        if text is not None:
-            if content.strip() == text.strip():
-                return
-            else:
-                raise RuntimeError(
-                    "Expected to find:\n{0}\n\nActual output:\n{1}".format(
-                        text,
-                        content,
-                    )
-                )
-
-        artefact = self.path.key.joinpath(
-            "artefacts", "{0}.txt".format(reference.replace(" ", "-").lower())
-        )
-        text = artefact.text()
-
-        if not artefact.exists():
-            artefact.write_text(content)
-        else:
-            if self._rewrite:
-                if artefact.text() != content:
-                    artefact.write_text(content)
-            else:
-                Templex(text).assert_match(content)
 
     @validate(height=Int(), width=Int())
     def file_contents_should_be(self, filename, stripped, height, width):
@@ -214,18 +186,11 @@ class Engine(BaseEngine):
             else:
                 raise
 
-    #def output_will_be(self, text=None, reference=None, changeable=None):
-        #output_contents = self.path.state.joinpath("output.txt").bytes().decode("utf8")
-        #self._will_be(output_contents, text, reference, changeable)
-
     @validate(seconds=Float())
     def sleep(self, seconds):
-        import time
-
         time.sleep(float(seconds))
 
     def tear_down(self):
-        from path import Path
 
         if Path("/tmp/q").exists():
             print(Path("/tmp/q").text())
