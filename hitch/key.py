@@ -6,9 +6,10 @@ from engine import Engine
 
 
 toolkit = hitchpylibrarytoolkit.ProjectToolkitV2(
-    "ICommandLib",
+    "ICommandlib",
     "icommandlib",
     "crdoconnor/icommandlib",
+    image="",
 )
 
 
@@ -135,47 +136,6 @@ def build():
 @cli.command()
 def cleandevenv():
     DIR.gen.joinpath("pyenv", "versions", "devvenv").remove()
-
-
-@cli.command()
-@argument("strategy_name", nargs=1)
-def envirotest(strategy_name):
-    """Run tests on package / python version combinations."""
-    import envirotest
-    import pyenv
-
-    test_package = pyenv.PythonRequirements(
-        [
-            "hitchstory=={}".format(_current_version()),
-        ],
-        test_repo=True,
-    )
-
-    test_package = pyenv.PythonProjectDirectory(DIR.project)
-
-    prerequisites = [
-        pyenv.PythonVersionDependentRequirement(
-            package="markupsafe",
-            lower_version="2.0.0",
-            python_version_threshold="3.9",
-            higher_version="2.1.2",
-        ),
-        pyenv.PythonRequirements(
-            [
-                "ensure",
-            ]
-        ),
-    ]
-
-    envirotest.run_test(
-        pyenv.Pyenv(DIR.gen / "pyenv"),
-        DIR.project.joinpath("pyproject.toml").text(),
-        test_package,
-        prerequisites,
-        strategy_name,
-        _storybook,
-        lambda python_path: False,
-    )
 
 
 if __name__ == "__main__":
