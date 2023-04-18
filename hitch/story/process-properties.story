@@ -1,4 +1,5 @@
 Process properties:
+  docs: process-properties
   based on: icommandlib
   about: |
     Process properties can be queried at any time

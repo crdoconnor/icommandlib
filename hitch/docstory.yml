@@ -1,0 +1,99 @@
+story: |
+  {% if include_title -%}
+  ---
+  title: {{ name }}
+  ---
+  {% if "status" in info %}
+  {{ info["status"].documentation() }}
+  {% endif %}
+  {% endif %}
+
+  {{ about }}
+
+  {% for name, property in given.items() %}
+  {{ property.documentation() }}
+  {% endfor %}
+
+  {% if variations %}
+  {% for variation in variations %}
+  {{ variation.documentation() }}
+  {% endfor %}
+
+  {% else %}
+
+  {% for step in steps %}
+  {{ step.documentation() }}
+  {% endfor %}
+
+  {% endif %}
+
+  {% if include_title %}
+
+  !!! note "Executable specification"
+
+      Documentation automatically generated from 
+      <a href="https://github.com/crdoconnor/icommandlib/blob/master/hitch/story/{{ filename.name }}">{{ filename.name }}
+      storytests.</a>
+
+  {% endif %}
+variation: |
+  ## {{ name }}
+  
+  {{ about }}
+  
+  {% for name, property in given.child.items() %}
+  {{ property.documentation() }}
+  {% endfor %}
+
+  {% for step in steps %}
+  {{ step.documentation() }}
+  {% endfor %}
+
+given:
+  files: |
+    {% for filename, contents in files.items() %}
+    {{ filename }}:
+
+    ```{% if filename.endswith("py") %}python{% else %}yaml{% endif %}
+    {{ contents }}```
+    {%- endfor %}
+  setup: |
+    With code:
+
+    ```python
+    {{ setup }}
+    ```
+  code: |
+    ```python
+    {{ code }}
+    ```
+    
+steps:
+  run code: |
+    * When the code is run to completion.
+  
+  start code: |
+    * When code is started.
+  
+  processes not alive: |
+    Will result in the processes in these filenames
+    no longer being alive:
+    
+    {% for filename in from_filenames %}
+    * {{ filename }}
+    {% endfor %}
+    
+  file contents should be: |
+    The file contents of `{{ filename }}` will then be:
+    
+    ```{{ stripped }}```
+    
+    With height {{ height }} and width {{ width }}.
+  
+  raises exception: |
+    Will raise an exception of type `{{ exception_type }}`
+    with message:
+    
+    ```
+    {{ message }}
+    ```

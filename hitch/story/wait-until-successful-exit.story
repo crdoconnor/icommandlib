@@ -1,4 +1,5 @@
 Wait until successful exit:
+  docs: wait-until-successful-exit
   based on: icommandlib
   about: |
     Wait until exit with status code 0.

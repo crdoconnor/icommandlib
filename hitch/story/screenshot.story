@@ -1,4 +1,5 @@
 Screenshot:
+  docs: screenshot
   based on: icommandlib
   about: |
     At any point during or after program execution, you can

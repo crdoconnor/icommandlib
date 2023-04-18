@@ -1,4 +1,5 @@
 Custom Screen Condition:
+  docs: custom-screen-condition
   based on: icommandlib
   about: |
     In this example, customized functions are used

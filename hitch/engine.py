@@ -33,6 +33,7 @@ class Engine(BaseEngine):
 
     info_definition = InfoDefinition(
         known_failure=InfoProperty(Bool()),
+        docs=InfoProperty(Str()),
     )
 
     def __init__(self, paths, python_path, rewrite=False):

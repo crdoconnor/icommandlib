@@ -1,4 +1,5 @@
 Send keys:
+  docs: send-keys
   based on: icommandlib
   about: |
     In this example, favoritecolor.py is the program

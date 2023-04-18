@@ -1,4 +1,5 @@
 Screensize:
+  docs: screensize
   based on: icommandlib
   about: |
     You can run an interactive command in a terminal with a screen

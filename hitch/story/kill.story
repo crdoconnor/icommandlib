@@ -1,4 +1,5 @@
 Kill:
+  docs: kill
   based on: icommandlib
   about: |
     When an icommand is run, it is run in a separate process group. When it is killed,
