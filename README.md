@@ -1,10 +1,6 @@
----
-title: ICommandlib
----
+# ICommandlib
 
-
-
-<img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/crdoconnor/icommandlib?style=social"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/icommandlib">
+[![Main branch status](https://github.com/crdoconnor/icommandlib/actions/workflows/regression.yml/badge.svg)](https://github.com/crdoconnor/icommandlib/actions/workflows/regression.yml)
 
 ICommandLib is an interactive command line runner, a sibling of CommandLib.
 
@@ -77,13 +73,13 @@ $ pip install icommandlib
 
 ## Using ICommandLib
 
-- [Custom Screen Condition](using/custom-screen-condition)
-- [Kill](using/kill)
-- [Process properties](using/process-properties)
-- [Screenshot](using/screenshot)
-- [Screensize](using/screensize)
-- [Send keys](using/send-keys)
-- [Wait until successful exit](using/wait-until-successful-exit)
+- [Custom Screen Condition](https://hitchdev.com/icommandlib/using/custom-screen-condition)
+- [Kill](https://hitchdev.com/icommandlib/using/kill)
+- [Process properties](https://hitchdev.com/icommandlib/using/process-properties)
+- [Screenshot](https://hitchdev.com/icommandlib/using/screenshot)
+- [Screensize](https://hitchdev.com/icommandlib/using/screensize)
+- [Send keys](https://hitchdev.com/icommandlib/using/send-keys)
+- [Wait until successful exit](https://hitchdev.com/icommandlib/using/wait-until-successful-exit)
 
 
 ## Why not X instead?
