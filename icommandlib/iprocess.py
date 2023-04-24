@@ -28,6 +28,10 @@ class IScreen(object):
         return self.screen.display
 
     @property
+    def stripshot(self):
+        return stripshot(self.text)
+
+    @property
     def text(self):
         return "\n".join(self.display)
 
@@ -174,6 +178,16 @@ class IProcess(object):
             return len([line for line in iscreen.display if text in line]) > 0
 
         self.wait_until(on_screen, timeout)
+
+    def wait_for_stripshot_to_match(self, text, timeout=None):
+        """
+        Wait until the text specified matches exactly the
+        process's current stripshot.
+        """
+        self.wait_until(
+            lambda iscreen: text == iscreen.stripshot,
+            timeout,
+        )
 
     def send_keys(self, text):
         """

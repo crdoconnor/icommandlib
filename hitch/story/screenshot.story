@@ -23,7 +23,7 @@ Screenshot:
 
       process.wait_until_output_contains("RED")
   variations:
-    Normal:
+    Taking a screenshot:
       given:
         code: |
           with open("screenshot-before-finish.txt", "w") as handle:
@@ -50,3 +50,11 @@ Screenshot:
             RED
           height: 2
           width: 18
+
+    Waiting for stripshot to match string:
+      given:
+        code: |
+          process.wait_for_stripshot_to_match("favorite color:red\nRED")
+          process.wait_for_finish()
+      steps:
+      - Run code
