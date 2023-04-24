@@ -6,9 +6,12 @@ title: ICommandlib
 
 <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/crdoconnor/icommandlib?style=social"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/icommandlib">
 
-ICommandLib is an interactive command line runner, a sibling of CommandLib.
+Icommandlib is an interactive command line runner, designed (unlike pexpect) to be able to run command line applications in a virtual terminal window and take screenshots.
 
-It is kind of like a playwright/selenium for command line apps.
+It was designed for building self rewriting, documentation generating tests [like this](https://github.com/hitchdev/hitchstory/tree/master/examples/commandline)
+for interactive command line apps with the [hitchstory framework](/hitchstory).
+
+ICommandLib can take both terminal text screenshots and "stripshots" - terminal screenshots with all the white space to the right and bottom of the screen stripped.
 
 ## Example
 
@@ -85,7 +88,3 @@ $ pip install icommandlib
 - [Send keys](using/send-keys)
 - [Wait until successful exit](using/wait-until-successful-exit)
 
-
-## Why not X instead?
-
-* pexpect - doesn't use a TTY.
