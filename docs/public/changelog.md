@@ -1,6 +1,11 @@
 # Changelog
 
 
+### 0.7.0
+
+* FEATURE : Added wait for stripshot.
+
+
 ### 0.6.1
 
 * FEATURE : Remove sleeps and speed things up.

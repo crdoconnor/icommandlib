@@ -40,7 +40,7 @@ process.wait_until_output_contains("RED")
 
 
 
-## Normal
+## Taking a screenshot
 
 
 
@@ -73,6 +73,22 @@ The file contents of `stripshot-after-finish.txt` will then be:
 RED```
 
 With height 2 and width 18.
+
+
+## Waiting for stripshot to match string
+
+
+
+
+```python
+process.wait_for_stripshot_to_match("favorite color:red\nRED")
+process.wait_for_finish()
+
+```
+
+
+
+* When the code is run to completion.
 
 
 
