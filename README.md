@@ -55,12 +55,12 @@ Path("stripshot.txt").write_text(process.stripshot())
 
 The file contents of `stripshot.txt` will then be:
 
-```favorite color:red
+```
+favorite color:red
 Your favorite color is red
 favorite movie:the usual suspects
-Your favorite color is the usual suspects```
-
-With height 4 and width 41.
+Your favorite color is the usual suspects
+```
 
 
 

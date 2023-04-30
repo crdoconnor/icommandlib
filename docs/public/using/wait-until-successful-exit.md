@@ -60,9 +60,9 @@ assert process.exit_code == 0, process.exit_code
 
 The file contents of `finalscreenshot.txt` will then be:
 
-```hello```
-
-With height 24 and width 80.
+```
+hello
+```
 
 
 ## Unsuccessful exit

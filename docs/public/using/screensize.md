@@ -72,13 +72,13 @@ process.wait_for_finish()
 
 The file contents of `screenshot.txt` will then be:
 
-```favor
+```
+favor
 ite c
 olor:
 red
-RED```
-
-With height 10 and width 5.
+RED
+```
 
 
 ## Expanded
@@ -103,7 +103,7 @@ process.wait_for_finish()
 
 The file contents of `screenshot.txt` will then be:
 
-```hello world
+```
 hello world
 hello world
 hello world
@@ -253,9 +253,9 @@ hello world
 hello world
 hello world
 hello world
-goodbye world```
-
-With height 160 and width 80.
+hello world
+goodbye world
+```
 
 
 

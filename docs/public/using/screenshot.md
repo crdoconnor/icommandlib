@@ -62,17 +62,17 @@ with open("stripshot-after-finish.txt", "w") as handle:
 
 The file contents of `screenshot-before-finish.txt` will then be:
 
-```favorite color:red
-RED```
-
-With height 24 and width 80.
+```
+favorite color:red
+RED
+```
 
 The file contents of `stripshot-after-finish.txt` will then be:
 
-```favorite color:red
-RED```
-
-With height 2 and width 18.
+```
+favorite color:red
+RED
+```
 
 
 ## Waiting for stripshot to match string and succeeding
@@ -123,10 +123,10 @@ except IProcessTimeout as error:
 
 The file contents of `timeout-stripshot.txt` will then be:
 
-```Did not match. This was the output instead:
-favorite color:```
-
-With height 2 and width 43.
+```
+Did not match. This was the output instead:
+favorite color:
+```
 
 
 

@@ -75,9 +75,9 @@ process.wait_for_finish()
 
 The file contents of `color.txt` will then be:
 
-```blue```
-
-With height 1 and width 4.
+```
+blue
+```
 
 
 ## Check with error

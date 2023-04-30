@@ -73,15 +73,15 @@ process.wait_for_successful_exit()
 
 The file contents of `color.txt` will then be:
 
-```red```
-
-With height 1 and width 3.
+```
+red
+```
 
 The file contents of `movie.txt` will then be:
 
-```the usual suspects```
-
-With height 1 and width 18.
+```
+the usual suspects
+```
 
 
 ## Already exited
