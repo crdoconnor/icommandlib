@@ -6,7 +6,18 @@ class ICommandError(Exception):
 
 
 class IProcessTimeout(ICommandError):
-    pass
+    MESSAGE = "Timed out after {timeout} seconds:\n\n{stripshot}"
+
+    def __init__(self, timeout, stripshot):
+        self.timeout = timeout
+        self.stripshot = stripshot
+
+        super(IProcessTimeout, self).__init__(
+            self.MESSAGE.format(
+                timeout=self.timeout,
+                stripshot=self.stripshot,
+            )
+        )
 
 
 class IProcessExitError(ICommandError):

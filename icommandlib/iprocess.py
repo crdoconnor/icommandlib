@@ -140,10 +140,8 @@ class IProcess(object):
 
                 if time.time() - start_time > timeout:
                     raise exceptions.IProcessTimeout(
-                        "Timed out after {0} seconds:\n\n{1}".format(
-                            timeout,
-                            stripshot(self.iscreen.text),
-                        )
+                        timeout,
+                        self.iscreen.stripshot,
                     )
 
                 if not self.running:
@@ -244,10 +242,8 @@ class IProcess(object):
 
             if time.time() - start_time > timeout:
                 raise exceptions.IProcessTimeout(
-                    "Timed out after {0} seconds:\n\n{1}".format(
-                        timeout,
-                        stripshot(self.iscreen.text),
-                    )
+                    timeout,
+                    self.iscreen.stripshot,
                 )
 
     def wait_for_successful_exit(self, timeout=None):
