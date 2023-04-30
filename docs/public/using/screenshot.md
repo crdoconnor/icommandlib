@@ -26,7 +26,7 @@ sys.stdout.flush()
 With code:
 
 ```python
-from icommandlib import ICommand
+from icommandlib import ICommand, IProcessTimeout
 from commandlib import python
 
 process = ICommand(python("favoritecolor.py")).run()
@@ -75,7 +75,7 @@ RED```
 With height 2 and width 18.
 
 
-## Waiting for stripshot to match string
+## Waiting for stripshot to match string and succeeding
 
 
 
@@ -89,6 +89,44 @@ process.wait_for_finish()
 
 
 * When the code is run to completion.
+
+
+## Waiting for stripshot to match string and failing
+
+
+
+
+With code:
+
+```python
+from icommandlib import ICommand, IProcessTimeout
+from commandlib import python
+
+process = ICommand(python("favoritecolor.py")).run()
+process.wait_until_output_contains("favorite color:")
+
+```
+
+```python
+try:
+    process.wait_for_stripshot_to_match("notthis", timeout=0.1)
+except IProcessTimeout as error:
+    with open("timeout-stripshot.txt", "w") as handle:
+        handle.write("Did not match. This was the output instead:\n")
+        handle.write(error.stripshot)
+
+```
+
+
+
+* When the code is run to completion.
+
+The file contents of `timeout-stripshot.txt` will then be:
+
+```Did not match. This was the output instead:
+favorite color:```
+
+With height 2 and width 43.
 
 
 

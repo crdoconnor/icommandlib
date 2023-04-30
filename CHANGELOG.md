@@ -1,6 +1,11 @@
 # Changelog
 
 
+### 0.8.0
+
+* FEATURE : Save stripshot on IProcessTimeout exceptions.
+
+
 ### 0.7.0
 
 * FEATURE : Added wait for stripshot.
