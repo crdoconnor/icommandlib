@@ -86,9 +86,10 @@ steps:
   file contents should be: |
     The file contents of `{{ filename }}` will then be:
     
-    ```{{ stripped }}```
-    
-    With height {{ height }} and width {{ width }}.
+    ```
+    {{ stripped }}
+    ```
+
   
   raises exception: |
     Will raise an exception of type `{{ exception_type }}`
